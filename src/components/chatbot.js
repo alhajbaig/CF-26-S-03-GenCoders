@@ -264,10 +264,13 @@ export class SmartCityChatbot {
   _formatMarkdown(text) {
     if (!text) return '';
 
-    // 1. Convert code blocks
-    let formatted = text.replace(/```([a-z]*)\n([\s\S]*?)```/gi, '<pre class="cb-code-block"><code>$2</code></pre>');
+    // 1. Clean reasoning blocks if any exist
+    let formatted = text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
 
-    // 2. Convert Markdown Tables into real SCADA tables
+    // 2. Convert code blocks
+    formatted = formatted.replace(/```([a-z]*)\n([\s\S]*?)```/gi, '<pre class="cb-code-block"><code>$2</code></pre>');
+
+    // 3. Convert Markdown Tables into styled SCADA tables
     formatted = formatted.replace(/(\|.+?\|\n\|[-:| ]+?\|\n(?:\|.+?\|\n?)+)/g, (match) => {
       const rows = match.trim().split('\n').map((r) => r.trim()).filter(Boolean);
       if (rows.length < 2) return match;
@@ -286,9 +289,9 @@ export class SmartCityChatbot {
         cols.forEach((col, idx) => {
           let cellClass = 'cb-cell';
           const lower = col.toLowerCase();
-          if (lower.includes('failed') || lower.includes('critical')) cellClass += ' cell-red';
-          else if (lower.includes('operational') || lower.includes('nominal')) cellClass += ' cell-green';
-          else if (lower.includes('high') || lower.includes('degraded')) cellClass += ' cell-orange';
+          if (lower.includes('failed') || lower.includes('critical') || lower.includes('high risk')) cellClass += ' cell-red';
+          else if (lower.includes('operational') || lower.includes('nominal') || lower.includes('safe')) cellClass += ' cell-green';
+          else if (lower.includes('high') || lower.includes('degraded') || lower.includes('warning')) cellClass += ' cell-orange';
           else if (idx === 0) cellClass += ' cell-id';
           html += `<td class="${cellClass}">${col}</td>`;
         });
@@ -298,23 +301,31 @@ export class SmartCityChatbot {
       return html;
     });
 
-    // 3. Format Action & Protocol Badges
-    formatted = formatted.replace(/\[ACTION ([0-9]+)\]/gi, '<span class="cb-badge action">ACTION $1</span>');
-    formatted = formatted.replace(/\[(ISOLATE|CUTOVER|RESTORE|MONITOR|ALERT|CRITICAL|PRE-EMPTIVE|SCADA READY)\]/gi, '<span class="cb-badge $1">$1</span>');
+    // 4. Format Section Headings (### or **🎯 Header**)
+    formatted = formatted.replace(/^###\s+(.*?)$/gm, '<h4 class="cb-section-title">$1</h4>');
+    formatted = formatted.replace(/^##\s+(.*?)$/gm, '<h3 class="cb-section-title main">$1</h3>');
 
-    // 4. Format bold text
+    // 5. Format Action & Protocol Badges
+    formatted = formatted.replace(/\[ACTION ([0-9]+)\]/gi, '<span class="cb-badge action">ACTION $1</span>');
+    formatted = formatted.replace(/\[(ISOLATE|CUTOVER|RESTORE|MONITOR|ALERT|CRITICAL|PRE-EMPTIVE|SCADA READY|PRO-TIP|TIP)\]/gi, '<span class="cb-badge $1">$1</span>');
+
+    // 6. Format bold text
     formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
 
-    // 5. Format inline code
+    // 7. Format inline code
     formatted = formatted.replace(/`([^`]+)`/g, '<code class="cb-inline-code">$1</code>');
 
-    // 6. Format Node IDs
+    // 8. Format Node IDs (PWR-01, WTR-01, etc.)
     formatted = formatted.replace(/\b(PWR|WTR|TEL|TRF|TRN|HOS|EMG|POL|FIR|GOV|FIN|IND)-01\b/g, '<span class="cb-node-pill">$1-01</span>');
 
-    // 7. Format bullet points
-    formatted = formatted.replace(/^[•\-] (.*?)$/gm, '<div class="cb-bullet-item"><span class="bullet-dot">›</span><span>$1</span></div>');
+    // 9. Format Dividers
+    formatted = formatted.replace(/^---$/gm, '<div class="cb-divider"></div>');
 
-    // 8. Paragraphs and Linebreaks
+    // 10. Format bullet points and sub-bullets
+    formatted = formatted.replace(/^\s*[-*•]\s+(.*?)$/gm, '<div class="cb-bullet-item"><span class="bullet-dot">›</span><span>$1</span></div>');
+    formatted = formatted.replace(/^\s*([0-9]+)\.\s+(.*?)$/gm, '<div class="cb-bullet-item"><span class="bullet-num">$1.</span><span>$2</span></div>');
+
+    // 11. Paragraphs and Linebreaks
     formatted = formatted.replace(/\n\n/g, '<div class="cb-para-gap"></div>');
     formatted = formatted.replace(/\n/g, '<br/>');
 
@@ -330,7 +341,7 @@ export class SmartCityChatbot {
       <div class="chat-message bot">
         <div class="msg-author-tag">GROQ DISPATCHER</div>
         <div class="msg-body">
-          <p><strong>Console Cleared.</strong> Telemetry link synchronized. Ready for incident queries.</p>
+          <p><strong>Console Cleared.</strong> Telemetry link synchronized. Ready for any questions or simulation tasks!</p>
         </div>
       </div>
     `;
@@ -367,7 +378,7 @@ export class SmartCityChatbot {
       <div class="msg-author-tag">GROQ DISPATCHER</div>
       <div class="typing-indicator-box">
         <span class="typing-dots"><span></span><span></span><span></span></span>
-        <span class="typing-text">Computing Tactical Playbook via Groq API...</span>
+        <span class="typing-text">Thinking & structuring response...</span>
       </div>
     `;
     stream.appendChild(div);
@@ -499,7 +510,7 @@ export class SmartCityChatbot {
       })
       .join('\n');
 
-    const systemPrompt = `You are CASCADYN AI Incident Commander, an elite municipal disaster strategist and infrastructure engineer for a live 3D Digital Twin Smart City.
+    const systemPrompt = `You are CASCADYN AI, a friendly, ultra-knowledgeable, and highly articulate assistant designed to answer BOTH general questions and smart city infrastructure simulation queries.
 
 LIVE MUNICIPAL SIMULATION SCENARIO:
 - Global Resilience Score: ${resilience.toFixed(1)}% / 100%
@@ -507,15 +518,19 @@ LIVE MUNICIPAL SIMULATION SCENARIO:
 - Degraded Services (${degradedServices.length}): ${degradedServices.length > 0 ? degradedServices.map((s) => `${s.service_name} (${s.service_id})`).join(', ') : 'None'}
 - Critical Path Bottlenecks: PWR-01 (Power Grid) ➔ WTR-01 (Water Works) ➔ HOS-01 (St. Jude Level-1 Emergency Hospital)
 
-LIVE TOPOLOGY GRAPH & COUPLING WEIGHTS:
+LIVE TOPOLOGY GRAPH:
 ${topologyContext}
 
-OPERATIONAL DIRECTIVES:
-1. Ground every answer in the LIVE telemetry data provided above.
-2. If any service is currently Failed, immediately assess downstream impact, secondary casualties, and provide numbered mitigation actions ([ACTION 1], [ACTION 2], etc.).
-3. Reference exact service IDs (PWR-01, WTR-01, TEL-01, TRF-01, HOS-01, etc.) and coupling weights.
-4. Keep answers sharp, structured, authoritative, and actionable. Use **bold** for service names and key figures.
-5. If the user asks to fail or recover services, confirm what happened and explain the ripple consequences.`;
+HOW YOU MUST STRUCTURE YOUR ANSWERS:
+1. ALWAYS provide friendly, crystal-clear, structured answers that are easy to read and understand at a glance.
+2. Structure your answers with clear sections using bold headers and emojis:
+   - **🎯 Summary**: 1-2 friendly, clear sentences providing the direct answer.
+   - **🔍 Key Details**: Clean, well-spaced bullet points highlighting the most important facts.
+   - **⚡ City Impact** (for simulation queries): Explain in simple terms which services and citizens are affected.
+   - **🛠️ Action Items** (when troubleshooting/mitigating): 1-3 simple numbered steps.
+   - **💡 Pro-Tip**: A short, helpful tip or suggestion for the user.
+3. Be versatile! Answer everyday general queries (greetings, technology, science, general advice, explanations of concepts) with warmth and clarity. Never decline normal questions.
+4. When discussing simulation events, use the live city telemetry above and reference service names with bold IDs (e.g. **Power Grid (PWR-01)**).`;
 
     // Multi-turn messages
     const messagesPayload = [
@@ -548,8 +563,8 @@ OPERATIONAL DIRECTIVES:
           body: JSON.stringify({
             model,
             messages: messagesPayload,
-            temperature: 0.25,
-            max_tokens: 700
+            temperature: 0.3,
+            max_tokens: 650
           })
         });
 
@@ -574,7 +589,7 @@ OPERATIONAL DIRECTIVES:
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // LOCAL GRAPH INTELLIGENCE (Fallback if offline)
+  // LOCAL GRAPH INTELLIGENCE (Rich structured fallback for offline use)
   // ─────────────────────────────────────────────────────────────────────────
 
   _localIntelligence(question) {
@@ -583,31 +598,97 @@ OPERATIONAL DIRECTIVES:
     const resilience = this.graph.getResilienceScore();
     const failed = services.filter((s) => s.status === 'Failed');
 
+    // 1. Greetings & General Inquiries
+    if (q.match(/^(hi|hello|hey|greetings|howdy|good morning|good evening)/i)) {
+      return `**🎯 Summary**
+Hello! I'm your **CASCADYN AI Assistant**. I can help you with general questions as well as live smart city infrastructure simulation analysis.
+
+**🔍 What You Can Ask Me:**
+- 🏙️ **Live City State**: *"What is failing right now?"* or *"What is the city resilience?"*
+- ⚡ **Cascade Simulations**: *"What happens if Power Grid fails?"*
+- 📋 **Emergency Playbooks**: *"How do we protect the hospital during an outage?"*
+- 🎮 **Interactive Actions**: Type *"fail power"* or *"restore all services"* to trigger events!
+- 🌐 **General Knowledge**: Ask me about smart cities, disaster resilience, or graph theory.
+
+**💡 Pro-Tip**: You can click directly on any building in the 3D City view to trigger a cascade failure and watch the shockwaves propagate in real time!`;
+    }
+
+    // 2. What is CASCADYN / About
+    if (q.match(/(what is cascadyn|who are you|about this project|how does this work)/i)) {
+      return `**🎯 Summary**
+**CASCADYN** is a cutting-edge **3D Digital Twin and Urban Infrastructure Failure Simulator** that models how cascading outages ripple through interdependent municipal systems.
+
+**🔍 Key Components:**
+- 🏙️ **3D Smart City Engine**: Real-time WebGL visualization with procedural skyscrapers, dynamic lighting, and monorail loops.
+- 🔬 **2D Topology DAG**: Directed Acyclic Graph showing continuous physical coupling strengths between services.
+- 🎛️ **Stress Reactor & What-If Sandbox**: Multi-vector disaster testing and MTTR recovery algorithm benchmarking.
+- 🤖 **AI Incident Commander**: Real-time telemetry RAG dispatcher powered by Groq Llama-3 inference.
+
+**💡 Pro-Tip**: Try adjusting the **Stress Reactor Console** on the landing page from 0% to 100% to see how municipal SCADA jitter behaves under severe load!`;
+    }
+
+    // 3. Diagnose Active Outage
     if (q.match(/(diagnose|crisis|active|what is happening|what is wrong|failing right now)/i)) {
       if (failed.length === 0) {
-        return `✅ **ALL SYSTEMS NOMINAL.** City Resilience is at **${resilience.toFixed(1)}%**. No active failures detected. You can inject a test crisis by clicking a node in the 3D city or saying *"Fail power grid"* in chat.`;
+        return `**🎯 Summary**
+All systems are currently **100% Nominal**. The city is operating smoothly with a global resilience score of **${resilience.toFixed(1)}%**.
+
+**🔍 Infrastructure Highlights:**
+- ⚡ **Power Grid (PWR-01)**: Operational (120 MW output)
+- 💧 **Water Works (WTR-01)**: Operational (Nominal pressure)
+- 📡 **5G Telecom (TEL-01)**: Operational (Full bandwidth)
+- 🏥 **St. Jude Hospital (HOS-01)**: Protected (All life-support active)
+
+**💡 Pro-Tip**: You can test a cascade by saying *"Fail power grid"* or clicking on any building in the 3D viewport!`;
       }
+
       const list = failed
         .map((f) => {
           const dn = this.graph.getDownstreamDependents(f.service_id);
-          return `- **${f.service_name} (${f.service_id})** is FAILED. Impacting **${dn.length} downstream services**: ${dn.map((d) => d.service.service_id).join(', ')}`;
+          return `- **${f.service_name} (${f.service_id})** has FAILED ➔ Disrupting **${dn.length} downstream services** (${dn.map((d) => d.service.service_id).join(', ')}).`;
         })
         .join('\n');
-      return `🚨 **ACTIVE CRISIS TELEMETRY** (Resilience: **${resilience.toFixed(1)}%**):\n\n${list}\n\n**Recommendation:** Execute prioritized automated recovery starting with upstream root sources.`;
+
+      return `**🎯 Summary**
+🚨 **Active Crisis Detected**: The city resilience has dropped to **${resilience.toFixed(1)}%** due to **${failed.length} critical outage(s)**.
+
+**🔍 Live Outage Breakdown:**
+${list}
+
+**🛠️ Recommended Recovery Steps:**
+1. **[ISOLATE]** Quarantine circuit breakers feeding ${failed.map((f) => f.service_id).join(', ')}.
+2. **[CUTOVER]** Ensure auxiliary backup generators are engaged for **St. Jude Hospital (HOS-01)**.
+3. **[RESTORE]** Execute priority MTTR algorithms on primary root substations.
+
+**💡 Pro-Tip**: Say *"Restore all services"* to instantly clear the failures and reset the city to nominal!`;
     }
 
-    if (q.match(/(playbook|mitigation|emergency plan|recommend)/i)) {
-      if (failed.length === 0) {
-        return `📋 **PREVENTIVE MITIGATION PLAYBOOK** (Resilience: **100%**):\n\n1. **[MONITOR]** Primary grid substations operating within normal thermal envelope.\n2. **[PRE-EMPTIVE]** St. Jude Hospital auxiliary diesel generators at 100% capacity (48h fuel reserves).\n3. **[SCADA READY]** Automated $2\\times$ MTTR algorithm primed on standby.`;
-      }
-      return `🚨 **EMERGENCY TACTICAL PLAYBOOK (CRISIS CODE #904)**:\n\n1. **[ISOLATE]** Quarantine SCADA breakers feeding failed nodes (${failed.map((f) => f.service_id).join(', ')}).\n2. **[CUTOVER]** Divert auxiliary battery reserves to St. Jude Emergency Hospital (HOS-01).\n3. **[RESTORE]** Execute priority MTTR algorithms on primary root substations.`;
+    // 4. What happens if Power fails
+    if (q.match(/what happens.*(power|electricity|pwr)/i)) {
+      return `**🎯 Summary**
+The **Power Grid (PWR-01)** is the primary root hub of the city. If it collapses, it triggers a catastrophic multi-tier cascade across nearly all municipal services.
+
+**🔍 Downstream Cascade Chain:**
+- 💧 **Water Purification (WTR-01)**: Stalls within 4.5 minutes due to electric pump stoppage (92% coupling).
+- 📡 **5G Telecom Hub (TEL-01)**: Depletes battery reserves within 9 minutes (86% coupling).
+- 🚦 **Smart Traffic Grid (TRF-01)**: Flashes yellow fail-safe mode (82% coupling).
+- 🏥 **St. Jude Hospital (HOS-01)**: Cuts over to auxiliary diesel generator backup (75% coupling).
+
+**🛠️ Mitigation Strategy:**
+- Prioritize root substation restoration using the **Automated 2× MTTR algorithm** to recover the entire grid in under 28 minutes.`;
     }
 
-    if (q.match(/(restore|recover|reset)/i)) {
-      this.graph.recoverAll();
-      return `✅ **RECOVERY EXECUTED:** All 12 municipal services have been restored to **100% Operational Baseline**.`;
-    }
+    // 5. General Fallback
+    return `**🎯 Summary**
+I'm here to help with both general inquiries and live smart city simulation queries!
 
-    return `**City Resilience: ${resilience.toFixed(1)}%** (${failed.length} active failures).\n\nAsk me:\n- *"Diagnose active crisis"*\n- *"What happens if Telecom fails?"*\n- *"Generate emergency playbook"*\n- *"Fail Power Grid"*`;
+**🔍 Quick Ideas to Try:**
+- *"What is the current city resilience?"*
+- *"What happens if Telecom fails?"*
+- *"Generate an emergency mitigation playbook"*
+- *"Explain what a cascading failure is"*
+- *"Fail the Power Grid"* (Interactive Simulator Action)
+- *"Restore all services"* (Reset City)`;
   }
 }
+

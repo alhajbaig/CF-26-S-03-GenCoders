@@ -5286,14 +5286,39 @@ kbd {
   letter-spacing: 0.06em;
 }
 
+/* Section Titles & Dividers */
+.cb-section-title {
+  font-family: var(--font-heading);
+  font-size: 0.86rem;
+  font-weight: 900;
+  color: #00D2FF !important;
+  margin: 10px 0 6px 0;
+  letter-spacing: -0.01em;
+}
+
+.cb-section-title.main {
+  font-size: 0.94rem;
+  color: #FFFFFF !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  padding-bottom: 4px;
+  margin-top: 12px;
+}
+
+.cb-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 10px 0;
+}
+
 /* Bullet Items */
 .cb-bullet-item {
   display: flex;
   align-items: baseline;
   gap: 8px;
-  margin-bottom: 5px;
+  margin-bottom: 6px;
   font-size: 0.82rem;
   color: #E2E8F0 !important;
+  line-height: 1.5;
 }
 
 .bullet-dot {
@@ -5303,8 +5328,16 @@ kbd {
   line-height: 1;
 }
 
+.bullet-num {
+  font-family: var(--font-mono);
+  font-weight: 800;
+  font-size: 0.78rem;
+  color: #00D2FF;
+  min-width: 18px;
+}
+
 .cb-para-gap {
-  height: 8px;
+  height: 10px;
 }
 
 /* High-Density SCADA Data Table inside Chat */
