@@ -261,6 +261,66 @@ export class SmartCityChatbot {
     });
   }
 
+  _formatMarkdown(text) {
+    if (!text) return '';
+
+    // 1. Convert code blocks
+    let formatted = text.replace(/```([a-z]*)\n([\s\S]*?)```/gi, '<pre class="cb-code-block"><code>$2</code></pre>');
+
+    // 2. Convert Markdown Tables into real SCADA tables
+    formatted = formatted.replace(/(\|.+?\|\n\|[-:| ]+?\|\n(?:\|.+?\|\n?)+)/g, (match) => {
+      const rows = match.trim().split('\n').map((r) => r.trim()).filter(Boolean);
+      if (rows.length < 2) return match;
+      const headerCols = rows[0].split('|').map((c) => c.trim()).filter((_, i, a) => i > 0 && i < a.length - 1);
+      const bodyRows = rows.slice(2);
+
+      let html = '<div class="cb-table-wrapper"><table class="cb-table"><thead><tr>';
+      headerCols.forEach((h) => {
+        html += `<th>${h}</th>`;
+      });
+      html += '</tr></thead><tbody>';
+
+      bodyRows.forEach((row) => {
+        const cols = row.split('|').map((c) => c.trim()).filter((_, i, a) => i > 0 && i < a.length - 1);
+        html += '<tr>';
+        cols.forEach((col, idx) => {
+          let cellClass = 'cb-cell';
+          const lower = col.toLowerCase();
+          if (lower.includes('failed') || lower.includes('critical')) cellClass += ' cell-red';
+          else if (lower.includes('operational') || lower.includes('nominal')) cellClass += ' cell-green';
+          else if (lower.includes('high') || lower.includes('degraded')) cellClass += ' cell-orange';
+          else if (idx === 0) cellClass += ' cell-id';
+          html += `<td class="${cellClass}">${col}</td>`;
+        });
+        html += '</tr>';
+      });
+      html += '</tbody></table></div>';
+      return html;
+    });
+
+    // 3. Format Action & Protocol Badges
+    formatted = formatted.replace(/\[ACTION ([0-9]+)\]/gi, '<span class="cb-badge action">ACTION $1</span>');
+    formatted = formatted.replace(/\[(ISOLATE|CUTOVER|RESTORE|MONITOR|ALERT|CRITICAL|PRE-EMPTIVE|SCADA READY)\]/gi, '<span class="cb-badge $1">$1</span>');
+
+    // 4. Format bold text
+    formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+    // 5. Format inline code
+    formatted = formatted.replace(/`([^`]+)`/g, '<code class="cb-inline-code">$1</code>');
+
+    // 6. Format Node IDs
+    formatted = formatted.replace(/\b(PWR|WTR|TEL|TRF|TRN|HOS|EMG|POL|FIR|GOV|FIN|IND)-01\b/g, '<span class="cb-node-pill">$1-01</span>');
+
+    // 7. Format bullet points
+    formatted = formatted.replace(/^[•\-] (.*?)$/gm, '<div class="cb-bullet-item"><span class="bullet-dot">›</span><span>$1</span></div>');
+
+    // 8. Paragraphs and Linebreaks
+    formatted = formatted.replace(/\n\n/g, '<div class="cb-para-gap"></div>');
+    formatted = formatted.replace(/\n/g, '<br/>');
+
+    return formatted;
+  }
+
   _clearMessages() {
     const stream = this.element.querySelector('#chatbot-messages-stream');
     if (!stream) return;
@@ -269,7 +329,9 @@ export class SmartCityChatbot {
     stream.innerHTML = `
       <div class="chat-message bot">
         <div class="msg-author-tag">GROQ DISPATCHER</div>
-        <p><strong>Conversation Cleared.</strong> Telemetry state remains synchronized. Ready for incident queries.</p>
+        <div class="msg-body">
+          <p><strong>Console Cleared.</strong> Telemetry link synchronized. Ready for incident queries.</p>
+        </div>
       </div>
     `;
     this.updateLiveTelemetryHeader();
@@ -281,21 +343,12 @@ export class SmartCityChatbot {
     const div = document.createElement('div');
     div.className = `chat-message ${role} ${isAction ? 'action-msg' : ''}`;
 
-    const author = role === 'user' ? 'OPERATOR' : 'GROQ DISPATCHER';
-
-    // Format markdown-lite nicely
-    let formatted = text
-      .replace(/```([\s\S]*?)```/g, '<pre class="cb-code-block"><code>$1</code></pre>')
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/`(.*?)`/g, '<code class="cb-inline-code">$1</code>')
-      .replace(/\n\n/g, '</p><p>')
-      .replace(/\n- /g, '<br>• ')
-      .replace(/\n([0-9]+\. )/g, '<br><strong>$1</strong>')
-      .replace(/\n/g, '<br>');
+    const author = role === 'user' ? 'OPERATOR' : 'GROQ DISPATCHER • LIVE TELEMETRY';
+    const formatted = this._formatMarkdown(text);
 
     div.innerHTML = `
       <div class="msg-author-tag">${author}</div>
-      <div class="msg-body"><p>${formatted}</p></div>
+      <div class="msg-body">${formatted}</div>
     `;
 
     stream.appendChild(div);
@@ -314,7 +367,7 @@ export class SmartCityChatbot {
       <div class="msg-author-tag">GROQ DISPATCHER</div>
       <div class="typing-indicator-box">
         <span class="typing-dots"><span></span><span></span><span></span></span>
-        <span class="typing-text">Querying Live Telemetry & Groq Llama-3...</span>
+        <span class="typing-text">Computing Tactical Playbook via Groq API...</span>
       </div>
     `;
     stream.appendChild(div);
