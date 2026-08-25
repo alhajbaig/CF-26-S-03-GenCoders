@@ -111,8 +111,7 @@ html, body {
   left: 20px;
   right: 20px;
   height: 64px;
-  z-index: 60;
-  pointer-events: auto;
+  z-index: 20;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -228,16 +227,6 @@ html, body {
   display: flex;
   align-items: center;
   gap: 10px;
-  position: relative;
-  z-index: 62;
-}
-
-.header-actions .btn,
-.header-actions .btn-icon {
-  position: relative;
-  z-index: 63;
-  pointer-events: auto !important;
-  cursor: pointer !important;
 }
 
 /* Glass Buttons */
@@ -329,9 +318,7 @@ html, body {
 
 .landing-overlay.hidden {
   opacity: 0;
-  pointer-events: none !important;
-  visibility: hidden !important;
-  display: none !important;
+  pointer-events: none;
   transform: scale(1.04);
 }
 
@@ -4016,24 +4003,21 @@ html, body {
   left: 0;
   width: 100%;
   height: 100%;
-  z-index: 100;
-  background: rgba(15, 23, 42, 0.65);
-  backdrop-filter: blur(14px);
-  display: none;
+  z-index: 50;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(12px);
+  display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
   opacity: 0;
   pointer-events: none;
-  visibility: hidden;
   transition: opacity 0.25s ease;
 }
 
 .modal-overlay.open {
-  display: flex;
   opacity: 1;
   pointer-events: auto;
-  visibility: visible;
 }
 
 .modal-card {
@@ -4634,27 +4618,15 @@ html, body {
 .failure-flashcard-overlay {
   position: fixed;
   inset: 0;
-  z-index: 110;
-  display: none;
+  z-index: 9999;
+  display: flex;
   align-items: center;
   justify-content: center;
   pointer-events: none;
-  visibility: hidden;
-  opacity: 0;
   transition: opacity 0.35s ease;
 }
-.failure-flashcard-overlay.hidden {
-  opacity: 0;
-  pointer-events: none !important;
-  visibility: hidden !important;
-  display: none !important;
-}
-.failure-flashcard-overlay.visible {
-  display: flex !important;
-  opacity: 1 !important;
-  pointer-events: auto !important;
-  visibility: visible !important;
-}
+.failure-flashcard-overlay.hidden { opacity: 0; pointer-events: none; }
+.failure-flashcard-overlay.visible { opacity: 1; pointer-events: all; }
 
 .flashcard-backdrop {
   position: absolute; inset: 0;
