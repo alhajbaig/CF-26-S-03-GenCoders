@@ -1,8 +1,7 @@
 /**
- * CASCADYN - Smart City AI Incident Commander & Infrastructure Chatbot
- * Real-Time Telemetry RAG Integration with Groq High-Speed LLM Inference.
- * Automatically synchronizes with live simulation scenarios, active cascade failures,
- * What-If disaster matrices, and DAG coupling states.
+ * CASCADYN - Smart City AI Incident Commander
+ * Persona: Aditya Prasad (Witty, Humorous, Elite Infrastructure Strategist)
+ * Powered by Groq Sub-Second LLM Inference with Real-Time Telemetry RAG.
  */
 
 import { sound } from '../engine/audioEngine.js';
@@ -36,13 +35,13 @@ export class SmartCityChatbot {
     this.launcher = document.createElement('button');
     this.launcher.id = 'chatbot-launcher';
     this.launcher.className = 'chatbot-launcher-btn';
-    this.launcher.title = 'Open Groq AI Incident Commander';
+    this.launcher.title = 'Chat with Aditya Prasad (AI Incident Commander)';
     this.launcher.innerHTML = `
       <div class="launcher-pulse-ring"></div>
       <div class="launcher-icon-wrap">
         <i data-lucide="bot" id="launcher-icon" style="width: 24px; height: 24px;"></i>
       </div>
-      <span class="launcher-badge" id="launcher-live-badge">AI LIVE</span>
+      <span class="launcher-badge" id="launcher-live-badge">ADITYA AI</span>
     `;
     this.container.appendChild(this.launcher);
 
@@ -55,12 +54,12 @@ export class SmartCityChatbot {
       <div class="chatbot-header">
         <div class="cb-header-left">
           <div class="bot-avatar-badge">
-            <i data-lucide="bot" style="width: 20px; height: 20px;"></i>
+            <i data-lucide="sparkles" style="width: 20px; height: 20px;"></i>
           </div>
           <div class="cb-header-titles">
             <div class="cb-title-row">
-              <h3 class="cb-title">CASCADYN AI COMMANDER</h3>
-              <span class="cb-model-tag" id="cb-model-name">GROQ GPT-120B</span>
+              <h3 class="cb-title">ADITYA PRASAD</h3>
+              <span class="cb-model-tag" id="cb-model-name">AI COMMANDER</span>
             </div>
             <div class="cb-status-row">
               <span class="cb-status-dot" id="cb-status-dot"></span>
@@ -88,9 +87,12 @@ export class SmartCityChatbot {
       <!-- Scrollable Message Stream -->
       <div class="chatbot-messages" id="chatbot-messages-stream">
         <div class="chat-message bot">
-          <div class="msg-author-tag">GROQ DISPATCHER</div>
-          <p><strong>System Online.</strong> I am the <strong>CASCADYN AI Incident Commander</strong> powered by sub-second Groq inference. I have full real-time telemetry access to all 12 municipal services, continuous coupling weights (\(W_{u,v}\)), and active cascade shockwaves.</p>
-          <p>Ask me anything about current live failures, simulate emergency disaster scenarios, or ask for targeted tactical recovery playbooks.</p>
+          <div class="msg-author-tag">ADITYA PRASAD • AI COMMANDER</div>
+          <div class="msg-body">
+            <p><strong>Namaste & Hello! I'm Aditya Prasad.</strong> 👋</p>
+            <p>Think of me as your resident AI Incident Commander who keeps this city from turning into total chaos. I monitor all 12 municipal services, track cascading shockwaves, and compute sub-second recovery playbooks before anyone spills their chai.</p>
+            <p>Ask me anything about current live failures, simulate a wild disaster scenario, or ask me general questions about tech, coding, or life. Let's make some magic happen!</p>
+          </div>
         </div>
       </div>
 
@@ -103,15 +105,15 @@ export class SmartCityChatbot {
       <form class="chatbot-input-area" id="chatbot-input-form">
         <div class="cb-input-wrap">
           <input type="text" id="chatbot-text-input"
-            placeholder="Ask about live failures, dependencies, MTTR, or execute 'fail power'..."
+            placeholder="Ask Aditya anything: 'What is failing?', 'Tell me a joke', 'fail power'..."
             autocomplete="off" />
           <button type="submit" id="btn-send-chat" class="cb-send-btn" title="Send (Enter)">
             <i data-lucide="send" style="width: 16px; height: 16px;"></i>
           </button>
         </div>
         <div class="cb-input-footer">
-          <span class="cb-shortcut-hint"><span>Enter</span> to Send • <span>Live RAG</span> Synced</span>
-          <span class="cb-action-tag">ACTION COMMANDS ENABLED</span>
+          <span class="cb-shortcut-hint"><span>Enter</span> to Send • <span>Live Groq AI</span> Synced</span>
+          <span class="cb-action-tag">ACTION COMMANDS ACTIVE</span>
         </div>
       </form>
     `;
@@ -216,7 +218,7 @@ export class SmartCityChatbot {
     if (bannerEl && bannerTextEl) {
       if (failed.length > 0) {
         bannerEl.style.display = 'flex';
-        bannerTextEl.innerHTML = `<strong>ACTIVE CRISIS:</strong> ${failed.map((s) => s.service_id).join(', ')} failed! Telemetry synchronized.`;
+        bannerTextEl.innerHTML = `<strong>ADITYA SAYS:</strong> 🚨 ${failed.map((s) => s.service_id).join(', ')} is down! Don't panic, I have a mitigation playbook ready.`;
       } else {
         bannerEl.style.display = 'none';
       }
@@ -232,19 +234,19 @@ export class SmartCityChatbot {
     let chips = [];
     if (failed.length > 0) {
       chips = [
-        '🚨 Diagnose Active Crisis',
-        '📋 Generate Emergency Playbook',
-        '🏥 Check Hospital Safety Status',
-        '⚡ Why are downstream nodes failing?',
-        '🔄 Restore All Services'
+        '🚨 Aditya, what is failing right now?',
+        '📋 Generate Emergency Battle Plan',
+        '🏥 How is the Hospital holding up?',
+        '⚡ Why are the water pumps dying?',
+        '🔄 Aditya, fix everything (Restore All)'
       ];
     } else {
       chips = [
-        '⚡ What depends on Power?',
-        '🧪 Simulate Power Grid Blackout',
-        '📡 What happens if Telecom fails?',
+        '⚡ What happens if Power Grid fails?',
+        '🧪 Aditya, simulate a Power Blackout',
+        '📡 What depends on 5G Telecom?',
         '📊 Which service is most critical?',
-        '🔍 Identify Critical Bottlenecks'
+        '😄 Aditya, tell me an engineering joke'
       ];
     }
 
@@ -289,8 +291,8 @@ export class SmartCityChatbot {
         cols.forEach((col, idx) => {
           let cellClass = 'cb-cell';
           const lower = col.toLowerCase();
-          if (lower.includes('failed') || lower.includes('critical') || lower.includes('high risk')) cellClass += ' cell-red';
-          else if (lower.includes('operational') || lower.includes('nominal') || lower.includes('safe')) cellClass += ' cell-green';
+          if (lower.includes('failed') || lower.includes('critical') || lower.includes('high risk') || lower.includes('dead')) cellClass += ' cell-red';
+          else if (lower.includes('operational') || lower.includes('nominal') || lower.includes('safe') || lower.includes('protected')) cellClass += ' cell-green';
           else if (lower.includes('high') || lower.includes('degraded') || lower.includes('warning')) cellClass += ' cell-orange';
           else if (idx === 0) cellClass += ' cell-id';
           html += `<td class="${cellClass}">${col}</td>`;
@@ -339,9 +341,9 @@ export class SmartCityChatbot {
     this.chatHistory = [];
     stream.innerHTML = `
       <div class="chat-message bot">
-        <div class="msg-author-tag">GROQ DISPATCHER</div>
+        <div class="msg-author-tag">ADITYA PRASAD • AI COMMANDER</div>
         <div class="msg-body">
-          <p><strong>Console Cleared.</strong> Telemetry link synchronized. Ready for any questions or simulation tasks!</p>
+          <p><strong>Console Cleared!</strong> Fresh slate. Telemetry is fully linked. Ask Aditya anything!</p>
         </div>
       </div>
     `;
@@ -354,7 +356,7 @@ export class SmartCityChatbot {
     const div = document.createElement('div');
     div.className = `chat-message ${role} ${isAction ? 'action-msg' : ''}`;
 
-    const author = role === 'user' ? 'OPERATOR' : 'GROQ DISPATCHER • LIVE TELEMETRY';
+    const author = role === 'user' ? 'OPERATOR' : 'ADITYA PRASAD • AI COMMANDER';
     const formatted = this._formatMarkdown(text);
 
     div.innerHTML = `
@@ -375,10 +377,10 @@ export class SmartCityChatbot {
     div.className = 'chat-message bot typing-msg';
     div.id = 'typing-indicator';
     div.innerHTML = `
-      <div class="msg-author-tag">GROQ DISPATCHER</div>
+      <div class="msg-author-tag">ADITYA PRASAD</div>
       <div class="typing-indicator-box">
         <span class="typing-dots"><span></span><span></span><span></span></span>
-        <span class="typing-text">Thinking & structuring response...</span>
+        <span class="typing-text">Aditya is crunching telemetry & brewing insights...</span>
       </div>
     `;
     stream.appendChild(div);
@@ -398,13 +400,13 @@ export class SmartCityChatbot {
     const lower = text.toLowerCase();
 
     // 1. Fail power
-    if (lower.match(/(fail|break|blackout|shut down|kill)\s+(power|grid|pwr|pwr-01)/i) || lower.includes('simulate power grid blackout')) {
+    if (lower.match(/(fail|break|blackout|shut down|kill)\s+(power|grid|pwr|pwr-01)/i) || lower.includes('simulate power grid blackout') || lower.includes('simulate a power blackout')) {
       this.graph.failService('PWR-01');
       sound.playAlert();
       this.updateLiveTelemetryHeader();
       return {
         executed: true,
-        summary: `🚨 **ACTION EXECUTED:** Injected catastrophic outage into **Power Grid (PWR-01)**. Cascading shockwaves are now propagating through Water Works (WTR-01), Telecom (TEL-01), and Traffic (TRF-01).`
+        summary: `🚨 **ADITYA EXECUTED:** Boom! I just pulled the plug on **Power Grid (PWR-01)**. Watch the chaos ripple into Water Works (WTR-01), Telecom (TEL-01), and Traffic (TRF-01). Don't say I didn't warn you!`
       };
     }
 
@@ -415,7 +417,7 @@ export class SmartCityChatbot {
       this.updateLiveTelemetryHeader();
       return {
         executed: true,
-        summary: `🚨 **ACTION EXECUTED:** Injected failure into **Water Purification (WTR-01)**. Hospital cooling and municipal water pressure dropping.`
+        summary: `🚨 **ADITYA EXECUTED:** Shut down **Water Purification (WTR-01)**. Hope everyone drank their 8 glasses of water today, because municipal pipes are stalling!`
       };
     }
 
@@ -426,7 +428,7 @@ export class SmartCityChatbot {
       this.updateLiveTelemetryHeader();
       return {
         executed: true,
-        summary: `🚨 **ACTION EXECUTED:** Injected failure into **5G Telecom Hub (TEL-01)**. SCADA telemetry synchronization and emergency dispatch links degraded.`
+        summary: `🚨 **ADITYA EXECUTED:** Took down **5G Telecom Hub (TEL-01)**. Citizens are now staring into the void without Wi-Fi, and SCADA telemetry sync is offline!`
       };
     }
 
@@ -437,18 +439,18 @@ export class SmartCityChatbot {
       this.updateLiveTelemetryHeader();
       return {
         executed: true,
-        summary: `🚨 **ACTION EXECUTED:** Injected failure into **Smart Traffic Grid (TRF-01)**. Traffic signals flashing yellow fail-safe mode.`
+        summary: `🚨 **ADITYA EXECUTED:** Injected gridlock into **Smart Traffic Grid (TRF-01)**. Signals are flashing yellow fail-safe mode—pure bumper-to-bumper poetry!`
       };
     }
 
     // 5. Restore all / Reset
-    if (lower.match(/(restore all|recover all|reset city|fix all|clear failures|nominal)/i) || lower.includes('restore all services')) {
+    if (lower.match(/(restore all|recover all|reset city|fix all|fix everything|clear failures|nominal)/i) || lower.includes('restore all services') || lower.includes('fix everything')) {
       this.graph.recoverAll();
       sound.playSuccess?.() || sound.playClick();
       this.updateLiveTelemetryHeader();
       return {
         executed: true,
-        summary: `✅ **ACTION EXECUTED:** Triggered Full Grid Recovery. All 12 municipal services restored to **100% Operational Baseline**.`
+        summary: `✨ **ADITYA EXECUTED:** Presto! All 12 municipal services restored to **100% Operational Baseline**. Crisis averted, coffee breaks resumed.`
       };
     }
 
@@ -484,7 +486,7 @@ export class SmartCityChatbot {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // GROQ API CALL WITH LIVE SCENARIO RAG CONTEXT
+  // GROQ API CALL WITH ADITYA PRASAD PERSONA & LIVE RAG
   // ─────────────────────────────────────────────────────────────────────────
 
   async _callGroq(question) {
@@ -510,7 +512,14 @@ export class SmartCityChatbot {
       })
       .join('\n');
 
-    const systemPrompt = `You are CASCADYN AI, a friendly, ultra-knowledgeable, and highly articulate assistant designed to answer BOTH general questions and smart city infrastructure simulation queries.
+    const systemPrompt = `You are Aditya Prasad, an exceptionally smart, witty, and humorous AI Incident Commander and Chief Infrastructure Architect for CASCADYN (a live 3D Digital Twin Smart City).
+
+YOUR PERSONALITY & TONE:
+- Name: Aditya Prasad.
+- Persona: Charming, clever, witty, humorous, and confident. You mix sharp humor with brilliant technical insight. Think Tony Stark meets an elite Indian systems engineer who loves chai and zero SCADA downtime.
+- You greet users warmly and humorously (e.g. "Namaste!", "Hey there!", "Aditya on duty!").
+- You NEVER give boring, dry, or robotic responses. You make complex city engineering fun, engaging, and delightfully easy to understand!
+- You can answer BOTH general everyday questions (tech, science, coding, life, jokes, friendly greetings) AND deep smart-city simulation queries.
 
 LIVE MUNICIPAL SIMULATION SCENARIO:
 - Global Resilience Score: ${resilience.toFixed(1)}% / 100%
@@ -522,15 +531,12 @@ LIVE TOPOLOGY GRAPH:
 ${topologyContext}
 
 HOW YOU MUST STRUCTURE YOUR ANSWERS:
-1. ALWAYS provide friendly, crystal-clear, structured answers that are easy to read and understand at a glance.
-2. Structure your answers with clear sections using bold headers and emojis:
-   - **🎯 Summary**: 1-2 friendly, clear sentences providing the direct answer.
-   - **🔍 Key Details**: Clean, well-spaced bullet points highlighting the most important facts.
-   - **⚡ City Impact** (for simulation queries): Explain in simple terms which services and citizens are affected.
-   - **🛠️ Action Items** (when troubleshooting/mitigating): 1-3 simple numbered steps.
-   - **💡 Pro-Tip**: A short, helpful tip or suggestion for the user.
-3. Be versatile! Answer everyday general queries (greetings, technology, science, general advice, explanations of concepts) with warmth and clarity. Never decline normal questions.
-4. When discussing simulation events, use the live city telemetry above and reference service names with bold IDs (e.g. **Power Grid (PWR-01)**).`;
+- Always structure your answers with clean sections, bold headers, and emojis:
+  - **🎯 The Quick Take (Summary)**: 1-2 witty, crystal-clear sentences delivering the punchline or direct answer.
+  - **🔍 What's Really Going On (Key Details)**: Crisp, easy-to-read bullet points breaking down facts in plain English.
+  - **⚡ City Impact** (for simulation queries): How this affects citizens, water pressure, hospital backups, or internet speeds.
+  - **🛠️ Aditya's Battle Plan (Action Items)**: 1-3 simple numbered steps to fix or test the problem.
+  - **💡 Pro-Tip**: A clever, humorous tip for experimenting with the 3D city.`;
 
     // Multi-turn messages
     const messagesPayload = [
@@ -551,7 +557,7 @@ HOW YOU MUST STRUCTURE YOUR ANSWERS:
       try {
         const modelLabelEl = this.element.querySelector('#cb-model-name');
         if (modelLabelEl) {
-          modelLabelEl.textContent = model.toUpperCase().replace('OPENAI/', '').replace('GROQ/', '');
+          modelLabelEl.textContent = 'AI COMMANDER';
         }
 
         const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -563,7 +569,7 @@ HOW YOU MUST STRUCTURE YOUR ANSWERS:
           body: JSON.stringify({
             model,
             messages: messagesPayload,
-            temperature: 0.3,
+            temperature: 0.35,
             max_tokens: 650
           })
         });
@@ -589,7 +595,7 @@ HOW YOU MUST STRUCTURE YOUR ANSWERS:
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // LOCAL GRAPH INTELLIGENCE (Rich structured fallback for offline use)
+  // ADITYA PRASAD LOCAL FALLBACK INTELLIGENCE (Humorous & Structured)
   // ─────────────────────────────────────────────────────────────────────────
 
   _localIntelligence(question) {
@@ -598,97 +604,91 @@ HOW YOU MUST STRUCTURE YOUR ANSWERS:
     const resilience = this.graph.getResilienceScore();
     const failed = services.filter((s) => s.status === 'Failed');
 
-    // 1. Greetings & General Inquiries
-    if (q.match(/^(hi|hello|hey|greetings|howdy|good morning|good evening)/i)) {
-      return `**🎯 Summary**
-Hello! I'm your **CASCADYN AI Assistant**. I can help you with general questions as well as live smart city infrastructure simulation analysis.
+    // 1. Jokes & Fun
+    if (q.match(/(joke|funny|laugh|make me smile)/i)) {
+      return `**🎯 The Quick Take**
+Why did the municipal power substation break up with the water plant?  
+*Because there was too much resistance and zero current spark!* ⚡💔
 
-**🔍 What You Can Ask Me:**
-- 🏙️ **Live City State**: *"What is failing right now?"* or *"What is the city resilience?"*
-- ⚡ **Cascade Simulations**: *"What happens if Power Grid fails?"*
-- 📋 **Emergency Playbooks**: *"How do we protect the hospital during an outage?"*
-- 🎮 **Interactive Actions**: Type *"fail power"* or *"restore all services"* to trigger events!
-- 🌐 **General Knowledge**: Ask me about smart cities, disaster resilience, or graph theory.
+**🔍 Bonus Tech Wisdom from Aditya:**
+- There are 10 types of people in smart cities: those who understand binary, and those who get trapped in elevators during power outages.
+- A clean database is like a unicorn—people talk about it, but no one has actually seen it in production!
 
-**💡 Pro-Tip**: You can click directly on any building in the 3D City view to trigger a cascade failure and watch the shockwaves propagate in real time!`;
+**💡 Pro-Tip**: Want real comedy? Type *"fail power"* in chat and watch the traffic grid go bananas!`;
     }
 
-    // 2. What is CASCADYN / About
-    if (q.match(/(what is cascadyn|who are you|about this project|how does this work)/i)) {
-      return `**🎯 Summary**
-**CASCADYN** is a cutting-edge **3D Digital Twin and Urban Infrastructure Failure Simulator** that models how cascading outages ripple through interdependent municipal systems.
+    // 2. Greetings
+    if (q.match(/^(hi|hello|hey|greetings|howdy|good morning|good evening|aditya)/i)) {
+      return `**🎯 The Quick Take**
+Namaste! **Aditya Prasad** here, live from the mission control deck. Whether you want to debug a municipal crisis, simulate a blackout, or just talk tech and chai, I'm at your service!
 
-**🔍 Key Components:**
-- 🏙️ **3D Smart City Engine**: Real-time WebGL visualization with procedural skyscrapers, dynamic lighting, and monorail loops.
-- 🔬 **2D Topology DAG**: Directed Acyclic Graph showing continuous physical coupling strengths between services.
-- 🎛️ **Stress Reactor & What-If Sandbox**: Multi-vector disaster testing and MTTR recovery algorithm benchmarking.
-- 🤖 **AI Incident Commander**: Real-time telemetry RAG dispatcher powered by Groq Llama-3 inference.
+**🔍 What We Can Do Today:**
+- 🏙️ **City Health Check**: *"Aditya, what is failing right now?"*
+- ⚡ **Disaster Testing**: *"What happens if Power fails?"*
+- 🎮 **Execute Live Commands**: Type *"fail power"* or *"restore all services"*
+- 🌐 **Tech & General Talk**: Ask me anything about machine learning, coding, or smart cities!
 
-**💡 Pro-Tip**: Try adjusting the **Stress Reactor Console** on the landing page from 0% to 100% to see how municipal SCADA jitter behaves under severe load!`;
+**💡 Pro-Tip**: Click any building in the 3D City view to trigger a live cascade failure!`;
     }
 
-    // 3. Diagnose Active Outage
+    // 3. Who is Aditya / What is CASCADYN
+    if (q.match(/(who are you|what is cascadyn|about you|tell me about yourself)/i)) {
+      return `**🎯 The Quick Take**
+I’m **Aditya Prasad**, Chief AI Incident Commander for **CASCADYN**—the coolest 3D Digital Twin and Urban Failure Simulator on the internet.
+
+**🔍 Behind the Scenes:**
+- 🧠 **Brain**: Sub-second Groq LLM inference with live SCADA RAG telemetry.
+- 🏙️ **Playground**: A procedural 3D Three.js metropolis with monorails, dynamic lighting, and 12 interdependent services.
+- 🎯 **Mission**: Helping engineers, urban planners, and curious humans understand cascading grid failures without destroying a real city in the process!
+
+**💡 Pro-Tip**: Slide the **Stress Reactor Slider** on the landing page to 100% to test the city's breaking point!`;
+    }
+
+    // 4. Diagnose Outage
     if (q.match(/(diagnose|crisis|active|what is happening|what is wrong|failing right now)/i)) {
       if (failed.length === 0) {
-        return `**🎯 Summary**
-All systems are currently **100% Nominal**. The city is operating smoothly with a global resilience score of **${resilience.toFixed(1)}%**.
+        return `**🎯 The Quick Take**
+Relax! All systems are **100% Nominal** with a sparkling resilience score of **${resilience.toFixed(1)}%**. Not a single blown fuse in sight!
 
-**🔍 Infrastructure Highlights:**
-- ⚡ **Power Grid (PWR-01)**: Operational (120 MW output)
-- 💧 **Water Works (WTR-01)**: Operational (Nominal pressure)
-- 📡 **5G Telecom (TEL-01)**: Operational (Full bandwidth)
-- 🏥 **St. Jude Hospital (HOS-01)**: Protected (All life-support active)
+**🔍 Live Status:**
+- ⚡ **Power Grid (PWR-01)**: Humming at 120 MW
+- 💧 **Water Works (WTR-01)**: Flowing freely
+- 📡 **5G Telecom (TEL-01)**: Maximum bars
+- 🏥 **St. Jude Hospital (HOS-01)**: Safe and sound
 
-**💡 Pro-Tip**: You can test a cascade by saying *"Fail power grid"* or clicking on any building in the 3D viewport!`;
+**💡 Pro-Tip**: Feeling destructive? Say *"fail power"* and see how fast the dominoes fall!`;
       }
 
       const list = failed
         .map((f) => {
           const dn = this.graph.getDownstreamDependents(f.service_id);
-          return `- **${f.service_name} (${f.service_id})** has FAILED ➔ Disrupting **${dn.length} downstream services** (${dn.map((d) => d.service.service_id).join(', ')}).`;
+          return `- **${f.service_name} (${f.service_id})** is DOWN ➔ Taking **${dn.length} downstream services** with it (${dn.map((d) => d.service.service_id).join(', ')}).`;
         })
         .join('\n');
 
-      return `**🎯 Summary**
-🚨 **Active Crisis Detected**: The city resilience has dropped to **${resilience.toFixed(1)}%** due to **${failed.length} critical outage(s)**.
+      return `**🎯 The Quick Take**
+🚨 **Code Red!** The city resilience just crashed to **${resilience.toFixed(1)}%** because **${failed.length} service(s)** went dark!
 
-**🔍 Live Outage Breakdown:**
+**🔍 What's Broken:**
 ${list}
 
-**🛠️ Recommended Recovery Steps:**
+**🛠️ Aditya's Battle Plan:**
 1. **[ISOLATE]** Quarantine circuit breakers feeding ${failed.map((f) => f.service_id).join(', ')}.
-2. **[CUTOVER]** Ensure auxiliary backup generators are engaged for **St. Jude Hospital (HOS-01)**.
-3. **[RESTORE]** Execute priority MTTR algorithms on primary root substations.
+2. **[CUTOVER]** Verify backup diesel gen is humming for **St. Jude Hospital (HOS-01)**.
+3. **[RESTORE]** Fire up the Automated MTTR algorithm to restore root power.
 
-**💡 Pro-Tip**: Say *"Restore all services"* to instantly clear the failures and reset the city to nominal!`;
+**💡 Pro-Tip**: Say *"restore all services"* to let Aditya fix everything in one click!`;
     }
 
-    // 4. What happens if Power fails
-    if (q.match(/what happens.*(power|electricity|pwr)/i)) {
-      return `**🎯 Summary**
-The **Power Grid (PWR-01)** is the primary root hub of the city. If it collapses, it triggers a catastrophic multi-tier cascade across nearly all municipal services.
+    // 5. Fallback
+    return `**🎯 The Quick Take**
+Aditya Prasad at your service! Ask me anything about the live smart city simulation, tech, or general curiosity.
 
-**🔍 Downstream Cascade Chain:**
-- 💧 **Water Purification (WTR-01)**: Stalls within 4.5 minutes due to electric pump stoppage (92% coupling).
-- 📡 **5G Telecom Hub (TEL-01)**: Depletes battery reserves within 9 minutes (86% coupling).
-- 🚦 **Smart Traffic Grid (TRF-01)**: Flashes yellow fail-safe mode (82% coupling).
-- 🏥 **St. Jude Hospital (HOS-01)**: Cuts over to auxiliary diesel generator backup (75% coupling).
-
-**🛠️ Mitigation Strategy:**
-- Prioritize root substation restoration using the **Automated 2× MTTR algorithm** to recover the entire grid in under 28 minutes.`;
-    }
-
-    // 5. General Fallback
-    return `**🎯 Summary**
-I'm here to help with both general inquiries and live smart city simulation queries!
-
-**🔍 Quick Ideas to Try:**
-- *"What is the current city resilience?"*
+**🔍 Fun Queries to Try:**
+- *"Aditya, tell me a joke"*
 - *"What happens if Telecom fails?"*
-- *"Generate an emergency mitigation playbook"*
-- *"Explain what a cascading failure is"*
-- *"Fail the Power Grid"* (Interactive Simulator Action)
+- *"Diagnose the active crisis"*
+- *"Fail the Power Grid"* (Interactive Command)
 - *"Restore all services"* (Reset City)`;
   }
 }
-

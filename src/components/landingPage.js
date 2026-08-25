@@ -477,19 +477,19 @@ export class LandingPage {
                     <i data-lucide="bot" style="width: 26px; height: 26px;"></i>
                   </div>
                 </div>
-                <h3 class="master-title">AI Incident Commander & Dispatcher</h3>
+                <h3 class="master-title">Consult Aditya Prasad (AI Commander)</h3>
                 <p class="master-desc">
-                  Open the floating AI Chatbot widget powered by Groq LLMs. Query real-time city health telemetry, generate custom disaster recovery playbooks, or prompt the AI to run targeted diagnostic cascade simulations.
+                  Chat directly with Aditya Prasad, our witty and elite AI Incident Commander powered by Groq Llama-3. Query real-time city health telemetry, generate emergency mitigation playbooks, or trigger live simulation actions.
                 </p>
                 <div class="master-shortcuts-row">
+                  <span class="kbd-pill"><kbd>Aditya Prasad</kbd> AI</span>
                   <span class="kbd-pill"><kbd>Groq LLM</kbd> Sub-Second</span>
                   <span class="kbd-pill"><kbd>Live RAG</kbd> Telemetry</span>
-                  <span class="kbd-pill"><kbd>Playbooks</kbd> Instant</span>
                 </div>
                 <div class="master-action-row">
                   <button class="btn-step-action btn-green btn-launch-step5">
                     <i data-lucide="message-square" style="width: 16px; height: 16px;"></i>
-                    <span>Consult AI Commander</span>
+                    <span>Chat with Aditya Prasad</span>
                   </button>
                 </div>
               </div>
@@ -794,7 +794,7 @@ export class LandingPage {
                         <div class="ai-chat-header">
                           <div class="ai-bot-avatar"><i data-lucide="bot" style="width: 16px; height: 16px;"></i></div>
                           <div>
-                            <div class="ai-name">GROQ LLAMA-3 DISPATCHER</div>
+                            <div class="ai-name">ADITYA PRASAD • AI COMMANDER</div>
                             <div class="ai-status">● Real-Time Telemetry RAG Linked</div>
                           </div>
                         </div>
@@ -802,9 +802,9 @@ export class LandingPage {
                       </div>
 
                       <div class="ai-chat-bubbles">
-                        <div class="ai-msg user">"PWR-01 and WTR-01 have failed. Recommend emergency recovery steps."</div>
+                        <div class="ai-msg user">"Aditya, PWR-01 and WTR-01 have failed. What is the emergency recovery plan?"</div>
                         <div class="ai-msg bot">
-                          <div class="bot-header">🚨 TACTICAL MITIGATION PLAYBOOK #842</div>
+                          <div class="bot-header">🚨 ADITYA'S EMERGENCY PLAYBOOK #842</div>
                           <div class="bot-steps">
                             <div class="b-step"><span class="step-badge red">ACTION 1</span> Cut over St. Jude Hospital to Auxiliary Diesel Gen (48h fuel).</div>
                             <div class="b-step"><span class="step-badge orange">ACTION 2</span> Isolate SCADA circuit breaker #4 to quarantine WTR-01 intake line.</div>
