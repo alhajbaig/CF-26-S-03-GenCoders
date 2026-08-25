@@ -235,6 +235,9 @@ export const CHICAGO_CITY_DATASET = [
     recovery_time: "50 mins",
     recovery_time_seconds: 50 * 60,
     impact_score: 99,
+    repair_budget_usd: 5400000,
+    hourly_economic_bleed_usd: 1150000,
+    emergency_ops_hourly_usd: 65000,
     coordinates: { x: -30, y: 0, z: -20 },
     icon: "zap",
     badge_color: "#FF2E93",
@@ -263,6 +266,9 @@ export const CHICAGO_CITY_DATASET = [
     recovery_time: "75 mins",
     recovery_time_seconds: 75 * 60,
     impact_score: 89,
+    repair_budget_usd: 3100000,
+    hourly_economic_bleed_usd: 720000,
+    emergency_ops_hourly_usd: 38000,
     coordinates: { x: -38, y: 0, z: 18 },
     icon: "droplets",
     badge_color: "#00D2FF",
@@ -287,6 +293,9 @@ export const CHICAGO_CITY_DATASET = [
     recovery_time: "35 mins",
     recovery_time_seconds: 35 * 60,
     impact_score: 95,
+    repair_budget_usd: 2800000,
+    hourly_economic_bleed_usd: 1450000,
+    emergency_ops_hourly_usd: 42000,
     coordinates: { x: -2, y: 0, z: -12 },
     icon: "radio",
     badge_color: "#0EA5E9",
@@ -313,6 +322,9 @@ export const CHICAGO_CITY_DATASET = [
     recovery_time: "25 mins",
     recovery_time_seconds: 25 * 60,
     impact_score: 76,
+    repair_budget_usd: 1200000,
+    hourly_economic_bleed_usd: 480000,
+    emergency_ops_hourly_usd: 25000,
     coordinates: { x: 16, y: 0, z: -18 },
     icon: "traffic-cone",
     badge_color: "#F59E0B",
@@ -336,6 +348,9 @@ export const CHICAGO_CITY_DATASET = [
     recovery_time: "55 mins",
     recovery_time_seconds: 55 * 60,
     impact_score: 85,
+    repair_budget_usd: 4600000,
+    hourly_economic_bleed_usd: 950000,
+    emergency_ops_hourly_usd: 48000,
     coordinates: { x: 22, y: 0, z: 12 },
     icon: "train",
     badge_color: "#F97316",
@@ -359,6 +374,9 @@ export const CHICAGO_CITY_DATASET = [
     recovery_time: "90 mins",
     recovery_time_seconds: 90 * 60,
     impact_score: 99,
+    repair_budget_usd: 3800000,
+    hourly_economic_bleed_usd: 1200000,
+    emergency_ops_hourly_usd: 140000,
     coordinates: { x: -12, y: 0, z: 25 },
     icon: "heart-pulse",
     badge_color: "#EF4444",
@@ -381,6 +399,9 @@ export const CHICAGO_CITY_DATASET = [
     recovery_time: "25 mins",
     recovery_time_seconds: 25 * 60,
     impact_score: 96,
+    repair_budget_usd: 1900000,
+    hourly_economic_bleed_usd: 620000,
+    emergency_ops_hourly_usd: 110000,
     coordinates: { x: 10, y: 0, z: 28 },
     icon: "shield-alert",
     badge_color: "#E11D48",
@@ -404,6 +425,9 @@ export const CHICAGO_CITY_DATASET = [
     recovery_time: "45 mins",
     recovery_time_seconds: 45 * 60,
     impact_score: 82,
+    repair_budget_usd: 1800000,
+    hourly_economic_bleed_usd: 890000,
+    emergency_ops_hourly_usd: 30000,
     coordinates: { x: 28, y: 0, z: -25 },
     icon: "landmark",
     badge_color: "#10B981",
@@ -421,7 +445,7 @@ export const CHICAGO_CITY_DATASET = [
 
 /**
  * Parses and validates custom CSV format:
- * service_id,service_name,status,criticality,dependency_strength,recovery_time,impact_score,coordinates,connected_services
+ * service_id,service_name,status,criticality,dependency_strength,recovery_time,impact_score,coordinates,connected_services,repair_budget_usd,hourly_economic_bleed_usd,emergency_ops_hourly_usd
  */
 export function importFromCSV(csvText) {
   const lines = csvText.trim().split(/\r?\n/);
@@ -446,10 +470,12 @@ export function importFromCSV(csvText) {
     const impact = parseInt(tokens[6], 10) || 75;
     
     // Parse coordinates or assign default
-    let coords = { x: (i % 4 - 1.5) * 20, y: 0, z: (Math.floor(i / 4) - 1) * 25 };
+    let coords = null;
     if (tokens[7]) {
       const parts = tokens[7].split(";").map(Number);
-      if (parts.length >= 2) coords = { x: parts[0] || 0, y: 0, z: parts[1] || 0 };
+      if (parts.length >= 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+        coords = { x: parts[0], y: 0, z: parts[1] };
+      }
     }
 
     // Parse connected services (format: ID:strength;ID2:strength2)
@@ -468,23 +494,36 @@ export function importFromCSV(csvText) {
       }
     }
 
+    // Budget fields with intelligent defaults if missing from uploaded dataset
+    const critMultiplier = criticality === 'Critical' ? 1.5 : criticality === 'High' ? 1.2 : 0.8;
+    const defaultRepair = Math.round((id.toLowerCase().includes('pwr') ? 4200000 : id.toLowerCase().includes('wtr') ? 2400000 : id.toLowerCase().includes('hos') ? 2900000 : 1800000) * critMultiplier);
+    const defaultBleed = Math.round((id.toLowerCase().includes('tel') ? 920000 : id.toLowerCase().includes('pwr') ? 850000 : id.toLowerCase().includes('trn') ? 780000 : 450000) * critMultiplier);
+    const defaultOps = Math.round(35000 * critMultiplier);
+
+    const repairBudget = tokens[9] ? parseFloat(tokens[9]) || defaultRepair : defaultRepair;
+    const hourlyBleed = tokens[10] ? parseFloat(tokens[10]) || defaultBleed : defaultBleed;
+    const emergencyOps = tokens[11] ? parseFloat(tokens[11]) || defaultOps : defaultOps;
+
     services.push({
       service_id: id,
       service_name: name,
-      category: id.toLowerCase().includes("pwr") ? "energy" : id.toLowerCase().includes("wtr") ? "water" : "municipal",
+      category: id.toLowerCase().includes("pwr") ? "energy" : id.toLowerCase().includes("wtr") ? "water" : id.toLowerCase().includes("tel") ? "telecom" : id.toLowerCase().includes("hos") ? "health" : id.toLowerCase().includes("trn") ? "transit" : "municipal",
       status: ["Operational", "Degraded", "Failed", "Recovering"].includes(status) ? status : "Operational",
       criticality: ["Critical", "High", "Medium", "Low"].includes(criticality) ? criticality : "Medium",
       dependency_strength: Math.min(1, Math.max(0, strength)),
       recovery_time: recovery,
       recovery_time_seconds: 45 * 60,
       impact_score: impact,
+      repair_budget_usd: repairBudget,
+      hourly_economic_bleed_usd: hourlyBleed,
+      emergency_ops_hourly_usd: emergencyOps,
       coordinates: coords,
       connected_services: connected,
       description: `Imported infrastructure service ${name}`,
       backup_system: "Standard Auxiliary Backup Grid",
       icon: "activity",
-      badge_color: "#FF2E93",
-      color_hex: "#FF2E93"
+      badge_color: id.toLowerCase().includes("pwr") ? "#FF2E93" : id.toLowerCase().includes("wtr") ? "#00D2FF" : id.toLowerCase().includes("tel") ? "#0EA5E9" : id.toLowerCase().includes("hos") ? "#EF4444" : "#10B981",
+      color_hex: id.toLowerCase().includes("pwr") ? "#FF2E93" : id.toLowerCase().includes("wtr") ? "#00D2FF" : "#10B981"
     });
   }
 

@@ -95,7 +95,7 @@ class CascadynApp {
         this.updateHeaderStats();
         this.updateLeftDock();
         this.cityScene.resetOverviewCamera();
-        this.cityScene.updateServiceVisuals();
+        this.cityScene.syncWithDataset();
         if (this.whatIfSimulator) {
           this.whatIfSimulator.selectedServices.clear();
           this.whatIfSimulator.renderForm();

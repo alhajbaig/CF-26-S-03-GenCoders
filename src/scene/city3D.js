@@ -116,9 +116,9 @@ export class City3DScene {
     // 7. Event Listeners
     this.bindEvents();
 
-    // 8. Graph Subscription
+    // 8. Graph Subscription (Dynamic sync with dataset additions/reductions)
     this.unsubscribeGraph = this.graph.subscribe(() => {
-      this.updateServiceVisuals();
+      this.syncWithDataset();
     });
 
     // 9. Animation Loop
@@ -813,12 +813,94 @@ export class City3DScene {
     this.scene.add(treeGroup);
   }
 
-  buildServiceLandmarks() {
-    const services = this.graph.getAllServices();
+  syncWithDataset() {
+    const currentServices = this.graph.getAllServices();
+    const currentIds = new Set(currentServices.map((s) => s.service_id));
+    const existingIds = new Set(this.serviceMeshes.keys());
 
-    services.forEach(service => {
+    // Check if building count or service IDs changed
+    let needsFullRebuild = currentIds.size !== existingIds.size;
+    if (!needsFullRebuild) {
+      for (const id of currentIds) {
+        if (!existingIds.has(id)) {
+          needsFullRebuild = true;
+          break;
+        }
+      }
+    }
+
+    if (needsFullRebuild) {
+      this.rebuildServiceLandmarksAndSplines(currentServices);
+    } else {
+      this.updateServiceVisuals();
+    }
+  }
+
+  buildServiceLandmarks() {
+    this.rebuildServiceLandmarksAndSplines(this.graph.getAllServices());
+  }
+
+  rebuildServiceLandmarksAndSplines(services) {
+    // 1. Cleanly dispose and remove all existing service landmark meshes
+    this.serviceMeshes.forEach((group) => {
+      this.scene.remove(group);
+      group.traverse((child) => {
+        if (child.isMesh) {
+          if (child.geometry) child.geometry.dispose();
+          if (child.material) {
+            if (Array.isArray(child.material)) {
+              child.material.forEach((m) => m.dispose());
+            } else {
+              child.material.dispose();
+            }
+          }
+        }
+      });
+    });
+    this.serviceMeshes.clear();
+    this.servicePins.clear();
+
+    // 2. Cleanly dispose and remove all existing dependency splines
+    this.dependencyLines.forEach((item) => {
+      if (item.line) {
+        this.scene.remove(item.line);
+        if (item.line.geometry) item.line.geometry.dispose();
+        if (item.line.material) item.line.material.dispose();
+      }
+      if (item.particles) {
+        this.scene.remove(item.particles);
+        if (item.particles.geometry) item.particles.geometry.dispose();
+        if (item.particles.material) item.particles.material.dispose();
+      }
+    });
+    this.dependencyLines = [];
+
+    // 3. Smart Coordinate Placement Generator for uploaded datasets
+    // If coordinates are missing, (0,0,0), or overlapping, distribute them across the 3D grid
+    const totalCount = services.length;
+    services.forEach((service, index) => {
+      if (
+        !service.coordinates ||
+        (service.coordinates.x === 0 && service.coordinates.z === 0) ||
+        isNaN(service.coordinates.x) ||
+        isNaN(service.coordinates.z)
+      ) {
+        const ring = Math.floor(index / 8);
+        const ringRadius = 26 + ring * 22;
+        const countInRing = Math.min(8, totalCount - ring * 8);
+        const angle = (index % 8) * (Math.PI * 2 / countInRing) + ring * 0.4;
+        service.coordinates = {
+          x: Math.round(Math.cos(angle) * ringRadius),
+          y: 0,
+          z: Math.round(Math.sin(angle) * ringRadius)
+        };
+      }
+    });
+
+    // 4. Build fresh landmark structures for all N services in dataset
+    services.forEach((service) => {
       const group = new THREE.Group();
-      group.position.set(service.coordinates.x, service.coordinates.y, service.coordinates.z);
+      group.position.set(service.coordinates.x, service.coordinates.y || 0, service.coordinates.z);
       group.userData = { serviceId: service.service_id, isServiceNode: true };
 
       // Base Landmark Pad
@@ -835,13 +917,14 @@ export class City3DScene {
 
       // Glowing Hologram Base Ring
       const ringGeo = new THREE.TorusGeometry(7.2, 0.28, 16, 48);
-      const ringMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(service.badge_color || 0xFF2E93) });
+      const ringMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(service.badge_color || 0x00D2FF) });
       const ring = new THREE.Mesh(ringGeo, ringMat);
       ring.rotation.x = Math.PI / 2;
       ring.position.y = 0.72;
+      ring.userData = { isStatusRing: true };
       group.add(ring);
 
-      // Custom Landmark Building by Category
+      // Custom Landmark Building by Category / Custom procedural
       this.createLandmarkStructure(service, group);
 
       // 3D Floating Beacon / Holographic Status Pin
@@ -853,12 +936,79 @@ export class City3DScene {
       this.scene.add(group);
       this.serviceMeshes.set(service.service_id, group);
     });
+
+    // 5. Rebuild Dependency Splines
+    this.buildDependencySplines();
+
+    // 6. Camera Auto-Frame
+    if (services.length > 0) {
+      let minX = Infinity,
+        maxX = -Infinity,
+        minZ = Infinity,
+        maxZ = -Infinity;
+      services.forEach((s) => {
+        minX = Math.min(minX, s.coordinates.x);
+        maxX = Math.max(maxX, s.coordinates.x);
+        minZ = Math.min(minZ, s.coordinates.z);
+        maxZ = Math.max(maxZ, s.coordinates.z);
+      });
+      const span = Math.max(maxX - minX, maxZ - minZ, 60);
+      const camDist = Math.max(100, span * 1.35);
+      this.animateCameraTo(new THREE.Vector3(0, camDist * 0.7, camDist), new THREE.Vector3(0, 0, 0), 1000);
+    }
+  }
+
+  updateServiceVisuals() {
+    const services = this.graph.getAllServices();
+
+    services.forEach((service) => {
+      const pin = this.servicePins.get(service.service_id);
+      if (pin && pin.userData) {
+        const color = this.getStatusColor(service.status);
+        if (pin.userData.diamond) {
+          pin.userData.diamond.material.color.setHex(color);
+          pin.userData.diamond.material.emissive.setHex(color);
+        }
+        if (pin.userData.ring) {
+          pin.userData.ring.material.color.setHex(color);
+        }
+      }
+
+      const meshGroup = this.serviceMeshes.get(service.service_id);
+      if (meshGroup) {
+        meshGroup.traverse((child) => {
+          if (child.isMesh && child.userData && child.userData.isStatusRing) {
+            child.material.color.setHex(this.getStatusColor(service.status));
+          }
+        });
+      }
+    });
+
+    // Update dependency lines
+    this.dependencyLines.forEach((item) => {
+      const source = this.graph.getService(item.sourceId);
+      const target = this.graph.getService(item.targetId);
+      if (!source || !target) return;
+
+      const isFailure = source.status === 'Failed' || target.status === 'Failed';
+      const isDegraded = source.status === 'Degraded' || target.status === 'Degraded';
+      const lineColor = isFailure ? 0xEF4444 : isDegraded ? 0xF59E0B : 0x00D2FF;
+
+      if (item.line && item.line.material) {
+        item.line.material.color.setHex(lineColor);
+      }
+      if (item.particles && item.particles.material) {
+        item.particles.material.color.setHex(lineColor);
+      }
+    });
   }
 
   createLandmarkStructure(service, group) {
-    const id = service.service_id;
+    const id = (service.service_id || '').toUpperCase();
+    const cat = (service.category || '').toLowerCase();
+    const badgeColor = service.badge_color || '#00D2FF';
 
-    if (id.includes("PWR")) {
+    if (id.includes('PWR') || cat.includes('energy') || cat.includes('power')) {
       // Power Grid Substation: High-voltage core + cooling coils + solar canopy
       const mainCore = new THREE.Mesh(
         new THREE.BoxGeometry(6.5, 9.5, 6.5),
@@ -868,7 +1018,7 @@ export class City3DScene {
       mainCore.castShadow = true;
       group.add(mainCore);
 
-      [-2.4, 0, 2.4].forEach(offset => {
+      [-2.4, 0, 2.4].forEach((offset) => {
         const coil = new THREE.Mesh(
           new THREE.CylinderGeometry(0.85, 0.85, 13, 16),
           new THREE.MeshStandardMaterial({ color: 0xFB7185, metalness: 0.85, roughness: 0.1 })
@@ -877,9 +1027,9 @@ export class City3DScene {
         coil.castShadow = true;
         group.add(coil);
       });
-    } else if (id.includes("WTR")) {
+    } else if (id.includes('WTR') || cat.includes('water')) {
       // Water Purification Works: Dual circular reservoirs + central filtration tower
-      [-2.6, 2.6].forEach(xOff => {
+      [-2.6, 2.6].forEach((xOff) => {
         const pool = new THREE.Mesh(
           new THREE.CylinderGeometry(2.6, 2.6, 2.8, 28),
           new THREE.MeshStandardMaterial({ color: 0x00D2FF, metalness: 0.8, roughness: 0.1, transparent: true, opacity: 0.92 })
@@ -896,7 +1046,7 @@ export class City3DScene {
       pumpBuilding.position.set(0, 3.6, -2.6);
       pumpBuilding.castShadow = true;
       group.add(pumpBuilding);
-    } else if (id.includes("TEL")) {
+    } else if (id.includes('TEL') || cat.includes('telecom') || cat.includes('comm')) {
       // 5G Telecom Communications Tower: High-gain lattice + microwave satellite dishes
       const tower = new THREE.Mesh(
         new THREE.CylinderGeometry(0.4, 2.0, 20, 8),
@@ -906,7 +1056,7 @@ export class City3DScene {
       tower.castShadow = true;
       group.add(tower);
 
-      [9, 13, 17].forEach(h => {
+      [9, 13, 17].forEach((h) => {
         const dish = new THREE.Mesh(
           new THREE.TorusGeometry(1.8, 0.18, 12, 24),
           new THREE.MeshBasicMaterial({ color: 0x38BDF8 })
@@ -915,7 +1065,7 @@ export class City3DScene {
         dish.position.y = h;
         group.add(dish);
       });
-    } else if (id.includes("HOS")) {
+    } else if (id.includes('HOS') || cat.includes('health') || cat.includes('med')) {
       // Smart Medical Center: Main hospital wing + active rooftop helipad
       const mainBuilding = new THREE.Mesh(
         new THREE.BoxGeometry(8.5, 11, 6.5),
@@ -931,7 +1081,7 @@ export class City3DScene {
       );
       helipad.position.set(0, 11.5, 0);
       group.add(helipad);
-    } else if (id.includes("TRF")) {
+    } else if (id.includes('TRF') || cat.includes('traffic') || cat.includes('signal')) {
       // Traffic AI Command Center: Geodesic dome + rotating radar satellite
       const dome = new THREE.Mesh(
         new THREE.SphereGeometry(3.8, 28, 20, 0, Math.PI * 2, 0, Math.PI / 2),
@@ -947,7 +1097,7 @@ export class City3DScene {
       );
       radar.position.set(2.6, 4.2, 2.6);
       group.add(radar);
-    } else if (id.includes("TRN")) {
+    } else if (id.includes('TRN') || cat.includes('transit') || cat.includes('metro') || cat.includes('rail')) {
       // Central Metro Terminal: Curved glass canopy
       const station = new THREE.Mesh(
         new THREE.CylinderGeometry(4.5, 4.5, 9, 20, 1, false, 0, Math.PI),
@@ -957,7 +1107,7 @@ export class City3DScene {
       station.position.y = 3.5;
       station.castShadow = true;
       group.add(station);
-    } else if (id.includes("EMG")) {
+    } else if (id.includes('EMG') || cat.includes('emergency') || cat.includes('police') || cat.includes('fire')) {
       // Emergency Command HQ: Dual bay garage + rotating siren beacon
       const station = new THREE.Mesh(
         new THREE.BoxGeometry(8, 8, 6),
@@ -973,7 +1123,7 @@ export class City3DScene {
       );
       siren.position.set(0, 8.8, 0);
       group.add(siren);
-    } else {
+    } else if (id.includes('GOV') || cat.includes('gov') || cat.includes('civic') || cat.includes('admin')) {
       // Civic / Government Municipal Spire
       const tower = new THREE.Mesh(
         new THREE.BoxGeometry(7, 15, 6),
@@ -982,6 +1132,43 @@ export class City3DScene {
       tower.position.y = 7.8;
       tower.castShadow = true;
       group.add(tower);
+    } else if (id.includes('FIN') || cat.includes('fin') || cat.includes('bank')) {
+      // Financial Crystalline Skyscraper
+      const finTower = new THREE.Mesh(
+        new THREE.CylinderGeometry(3.5, 4.5, 18, 6),
+        new THREE.MeshStandardMaterial({ color: 0xFBBF24, metalness: 0.75, roughness: 0.15 })
+      );
+      finTower.position.y = 9;
+      finTower.castShadow = true;
+      group.add(finTower);
+    } else if (id.includes('DAT') || cat.includes('data') || cat.includes('cloud')) {
+      // Modular Datacenter Cube
+      const dataCube = new THREE.Mesh(
+        new THREE.BoxGeometry(7.5, 8, 7.5),
+        new THREE.MeshStandardMaterial({ color: 0x06B6D4, metalness: 0.6, roughness: 0.2 })
+      );
+      dataCube.position.y = 4;
+      dataCube.castShadow = true;
+      group.add(dataCube);
+    } else {
+      // Generic High-Tech Procedural Landmark (for custom uploaded services)
+      const colorHex = parseInt(badgeColor.replace('#', '0x'), 16) || 0x00D2FF;
+      const customTower = new THREE.Mesh(
+        new THREE.BoxGeometry(6.5, 14, 6.5),
+        new THREE.MeshStandardMaterial({ color: colorHex, metalness: 0.6, roughness: 0.2 })
+      );
+      customTower.position.y = 7;
+      customTower.castShadow = true;
+      group.add(customTower);
+
+      // Rooftop glowing crown beacon
+      const crown = new THREE.Mesh(
+        new THREE.RingGeometry(2.0, 2.5, 16),
+        new THREE.MeshBasicMaterial({ color: colorHex, side: THREE.DoubleSide })
+      );
+      crown.rotation.x = Math.PI / 2;
+      crown.position.y = 14.2;
+      group.add(crown);
     }
   }
 

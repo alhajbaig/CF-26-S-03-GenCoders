@@ -52,6 +52,16 @@ export class WhatIfSimulator {
     this.element.className = 'what-if-sandbox-container';
     this.container.appendChild(this.element);
     this.renderForm();
+
+    this.graph.subscribe(() => {
+      if (!this.isSimulating) {
+        const validIds = new Set(this.graph.getAllServices().map((s) => s.service_id));
+        for (const id of this.selectedServices) {
+          if (!validIds.has(id)) this.selectedServices.delete(id);
+        }
+        this.renderForm();
+      }
+    });
   }
 
   // ─────────────────────────────────────────────────────────────────────────
