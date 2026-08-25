@@ -30,7 +30,7 @@ class CascadynApp {
     this.activeDockTab = 'services';
     this.dockSearchQuery = '';
     this.dockCategoryFilter = 'all';
-    this.groqApiKey = import.meta.env.VITE_GROQ_API_KEY || '';
+    this.groqApiKey = import.meta.env.VITE_GROQ_API_KEY || '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';
     this._prevFailedIds = new Set();
     this.hoverTooltipEl = null;
 

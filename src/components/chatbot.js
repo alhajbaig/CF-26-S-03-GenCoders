@@ -1,107 +1,164 @@
 /**
- * CASCADYN - Smart City AI Assistant Chatbot
- * Groq API integration with comprehensive local graph-aware fallback.
- * Handles questions about dependencies, cascades, resilience, criticality, etc.
+ * CASCADYN - Smart City AI Incident Commander & Infrastructure Chatbot
+ * Real-Time Telemetry RAG Integration with Groq High-Speed LLM Inference.
+ * Automatically synchronizes with live simulation scenarios, active cascade failures,
+ * What-If disaster matrices, and DAG coupling states.
  */
 
 import { sound } from '../engine/audioEngine.js';
 
-const GROQ_MODELS = ['llama3-8b-8192', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768'];
+const GROQ_MODELS = [
+  'openai/gpt-oss-120b',
+  'openai/gpt-oss-20b',
+  'qwen/qwen3.6-27b',
+  'groq/compound'
+];
+
+const DEFAULT_GROQ_KEY = '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';
 
 export class SmartCityChatbot {
   constructor(containerElement, graph, apiKey) {
     this.container = containerElement;
     this.graph = graph;
-    this.apiKey = apiKey;
+    this.apiKey = apiKey || import.meta.env.VITE_GROQ_API_KEY || DEFAULT_GROQ_KEY;
     this.isOpen = false;
     this.messages = [];
+    this.chatHistory = []; // multi-turn conversation memory
     this.element = null;
-    this.currentModelIdx = 0;  // try models in order
+    this.currentModelIdx = 0;
 
     this.init();
+    this._subscribeToGraphEvents();
   }
 
   init() {
-    // Floating launcher button
+    // 1. Floating Launcher Button with Live Pulse Ring
     this.launcher = document.createElement('button');
     this.launcher.id = 'chatbot-launcher';
     this.launcher.className = 'chatbot-launcher-btn';
-    this.launcher.title = 'Ask SmartCity Assistant';
-    this.launcher.innerHTML = `<i data-lucide="message-square" id="launcher-icon" style="width:22px;height:22px;"></i>`;
+    this.launcher.title = 'Open Groq AI Incident Commander';
+    this.launcher.innerHTML = `
+      <div class="launcher-pulse-ring"></div>
+      <div class="launcher-icon-wrap">
+        <i data-lucide="bot" id="launcher-icon" style="width: 24px; height: 24px;"></i>
+      </div>
+      <span class="launcher-badge" id="launcher-live-badge">AI LIVE</span>
+    `;
     this.container.appendChild(this.launcher);
 
-    // Chat panel
+    // 2. High-Tech Glassmorphic Chatbot Panel Container
     this.element = document.createElement('div');
     this.element.id = 'chatbot-panel';
     this.element.className = 'chatbot-panel-container collapsed';
     this.element.innerHTML = `
+      <!-- SCADA Telemetry Header -->
       <div class="chatbot-header">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <div class="bot-avatar">AI</div>
-          <div>
-            <h3 style="font-family:var(--font-heading);font-weight:800;font-size:0.95rem;color:var(--text-primary);line-height:1.2;">SmartCity Assistant</h3>
-            <span style="font-size:0.72rem;color:var(--status-green);font-weight:600;display:flex;align-items:center;gap:4px;">
-              <span style="width:6px;height:6px;border-radius:50%;background:var(--status-green);"></span> Online
-            </span>
+        <div class="cb-header-left">
+          <div class="bot-avatar-badge">
+            <i data-lucide="bot" style="width: 20px; height: 20px;"></i>
+          </div>
+          <div class="cb-header-titles">
+            <div class="cb-title-row">
+              <h3 class="cb-title">CASCADYN AI COMMANDER</h3>
+              <span class="cb-model-tag" id="cb-model-name">GROQ GPT-120B</span>
+            </div>
+            <div class="cb-status-row">
+              <span class="cb-status-dot" id="cb-status-dot"></span>
+              <span class="cb-status-text" id="cb-resilience-badge">● RESILIENCE: 100% (NOMINAL)</span>
+            </div>
           </div>
         </div>
-        <button id="btn-close-chatbot" class="btn-icon" style="width:32px;height:32px;" title="Close">
-          <i data-lucide="x" style="width:16px;height:16px;"></i>
-        </button>
-      </div>
 
-      <div class="chatbot-messages" id="chatbot-messages-stream">
-        <div class="chat-message bot">
-          <p>Hello! I'm the <strong>CASCADYN AI</strong>. Ask me anything about the city's infrastructure — dependencies, failure cascades, criticality, recovery priorities, and more.</p>
+        <div class="cb-header-actions">
+          <button id="btn-clear-chat" class="cb-icon-btn" title="Clear Conversation">
+            <i data-lucide="trash-2" style="width: 15px; height: 15px;"></i>
+          </button>
+          <button id="btn-close-chatbot" class="cb-icon-btn close-btn" title="Minimize Console">
+            <i data-lucide="x" style="width: 17px; height: 17px;"></i>
+          </button>
         </div>
       </div>
 
-      <div class="chatbot-suggestions">
-        <button class="suggestion-chip">What depends on Power?</button>
-        <button class="suggestion-chip">What happens if Telecom fails?</button>
-        <button class="suggestion-chip">Which service is most critical?</button>
-        <button class="suggestion-chip">Which creates the largest cascade?</button>
-        <button class="suggestion-chip">Why are hospitals affected?</button>
-        <button class="suggestion-chip">What should be restored first?</button>
-        <button class="suggestion-chip">Show all failed services</button>
-        <button class="suggestion-chip">What is the city resilience?</button>
+      <!-- Live Scenario Alert Banner -->
+      <div class="cb-scenario-banner" id="cb-scenario-banner" style="display: none;">
+        <span class="banner-icon">⚠️</span>
+        <span class="banner-text" id="cb-banner-text">Active Crisis Detected: 0 Services Disrupted</span>
       </div>
 
+      <!-- Scrollable Message Stream -->
+      <div class="chatbot-messages" id="chatbot-messages-stream">
+        <div class="chat-message bot">
+          <div class="msg-author-tag">GROQ DISPATCHER</div>
+          <p><strong>System Online.</strong> I am the <strong>CASCADYN AI Incident Commander</strong> powered by sub-second Groq inference. I have full real-time telemetry access to all 12 municipal services, continuous coupling weights (\(W_{u,v}\)), and active cascade shockwaves.</p>
+          <p>Ask me anything about current live failures, simulate emergency disaster scenarios, or ask for targeted tactical recovery playbooks.</p>
+        </div>
+      </div>
+
+      <!-- Dynamic Context-Aware Suggestion Chips -->
+      <div class="chatbot-suggestions-tray" id="chatbot-suggestions-tray">
+        <!-- Generated dynamically based on live city status -->
+      </div>
+
+      <!-- Interactive Input Form -->
       <form class="chatbot-input-area" id="chatbot-input-form">
-        <input type="text" id="chatbot-text-input"
-          placeholder="Ask about dependencies, failures, MTTR..." autocomplete="off" />
-        <button type="submit" id="btn-send-chat" title="Send">
-          <i data-lucide="send" style="width:16px;height:16px;"></i>
-        </button>
+        <div class="cb-input-wrap">
+          <input type="text" id="chatbot-text-input"
+            placeholder="Ask about live failures, dependencies, MTTR, or execute 'fail power'..."
+            autocomplete="off" />
+          <button type="submit" id="btn-send-chat" class="cb-send-btn" title="Send (Enter)">
+            <i data-lucide="send" style="width: 16px; height: 16px;"></i>
+          </button>
+        </div>
+        <div class="cb-input-footer">
+          <span class="cb-shortcut-hint"><span>Enter</span> to Send • <span>Live RAG</span> Synced</span>
+          <span class="cb-action-tag">ACTION COMMANDS ENABLED</span>
+        </div>
       </form>
     `;
     this.container.appendChild(this.element);
 
     if (window.lucide) window.lucide.createIcons();
     this._bindEvents();
+    this.updateLiveTelemetryHeader();
+  }
+
+  _subscribeToGraphEvents() {
+    if (this.graph && typeof this.graph.onStateChange === 'function') {
+      this.graph.onStateChange(() => {
+        this.updateLiveTelemetryHeader();
+      });
+    }
   }
 
   _bindEvents() {
-    this.launcher.addEventListener('click', () => { sound.playClick(); this.toggle(); });
+    // Toggle Button
+    this.launcher.addEventListener('click', () => {
+      sound.playClick();
+      this.toggle();
+    });
 
+    // Close Button
     this.element.querySelector('#btn-close-chatbot').addEventListener('click', () => {
-      sound.playClick(); this.close();
+      sound.playClick();
+      this.close();
     });
 
-    this.element.querySelectorAll('.suggestion-chip').forEach(chip => {
-      chip.addEventListener('click', () => {
-        sound.playClick();
-        const text = chip.textContent.trim();
-        this._handleSubmit(text);
-      });
+    // Clear Chat
+    this.element.querySelector('#btn-clear-chat').addEventListener('click', () => {
+      sound.playClick();
+      this._clearMessages();
     });
 
+    // Submit Form
     const form = this.element.querySelector('#chatbot-input-form');
-    form.addEventListener('submit', e => {
+    form.addEventListener('submit', (e) => {
       e.preventDefault();
       const input = this.element.querySelector('#chatbot-text-input');
       const text = input ? input.value.trim() : '';
-      if (text) { input.value = ''; this._handleSubmit(text); }
+      if (text) {
+        input.value = '';
+        this._handleSubmit(text);
+      }
     });
   }
 
@@ -113,6 +170,8 @@ export class SmartCityChatbot {
   open() {
     this.isOpen = true;
     this.element.classList.remove('collapsed');
+    this.launcher.classList.add('active');
+    this.updateLiveTelemetryHeader();
     const input = this.element.querySelector('#chatbot-text-input');
     if (input) setTimeout(() => input.focus(), 200);
   }
@@ -120,31 +179,144 @@ export class SmartCityChatbot {
   close() {
     this.isOpen = false;
     this.element.classList.add('collapsed');
+    this.launcher.classList.remove('active');
   }
 
-  _addMessage(role, text) {
+  updateLiveTelemetryHeader() {
+    if (!this.graph) return;
+    const services = this.graph.getAllServices();
+    const resilience = this.graph.getResilienceScore();
+    const failed = services.filter((s) => s.status === 'Failed');
+    const degraded = services.filter((s) => s.status === 'Degraded');
+
+    const badgeEl = this.element.querySelector('#cb-resilience-badge');
+    const dotEl = this.element.querySelector('#cb-status-dot');
+    const bannerEl = this.element.querySelector('#cb-scenario-banner');
+    const bannerTextEl = this.element.querySelector('#cb-banner-text');
+
+    if (badgeEl && dotEl) {
+      if (failed.length > 0) {
+        badgeEl.textContent = `● RESILIENCE: ${resilience.toFixed(1)}% (${failed.length} CRITICAL OUTAGE)`;
+        badgeEl.style.color = '#EF4444';
+        dotEl.style.background = '#EF4444';
+        dotEl.style.boxShadow = '0 0 10px #EF4444';
+      } else if (degraded.length > 0) {
+        badgeEl.textContent = `● RESILIENCE: ${resilience.toFixed(1)}% (${degraded.length} DEGRADED)`;
+        badgeEl.style.color = '#F97316';
+        dotEl.style.background = '#F97316';
+        dotEl.style.boxShadow = '0 0 10px #F97316';
+      } else {
+        badgeEl.textContent = `● RESILIENCE: ${resilience.toFixed(1)}% (NOMINAL)`;
+        badgeEl.style.color = '#10B981';
+        dotEl.style.background = '#10B981';
+        dotEl.style.boxShadow = '0 0 10px #10B981';
+      }
+    }
+
+    if (bannerEl && bannerTextEl) {
+      if (failed.length > 0) {
+        bannerEl.style.display = 'flex';
+        bannerTextEl.innerHTML = `<strong>ACTIVE CRISIS:</strong> ${failed.map((s) => s.service_id).join(', ')} failed! Telemetry synchronized.`;
+      } else {
+        bannerEl.style.display = 'none';
+      }
+    }
+
+    this._renderDynamicChips(failed, resilience);
+  }
+
+  _renderDynamicChips(failed, resilience) {
+    const tray = this.element.querySelector('#chatbot-suggestions-tray');
+    if (!tray) return;
+
+    let chips = [];
+    if (failed.length > 0) {
+      chips = [
+        '🚨 Diagnose Active Crisis',
+        '📋 Generate Emergency Playbook',
+        '🏥 Check Hospital Safety Status',
+        '⚡ Why are downstream nodes failing?',
+        '🔄 Restore All Services'
+      ];
+    } else {
+      chips = [
+        '⚡ What depends on Power?',
+        '🧪 Simulate Power Grid Blackout',
+        '📡 What happens if Telecom fails?',
+        '📊 Which service is most critical?',
+        '🔍 Identify Critical Bottlenecks'
+      ];
+    }
+
+    tray.innerHTML = chips
+      .map((c) => `<button class="cb-chip-btn">${c}</button>`)
+      .join('');
+
+    tray.querySelectorAll('.cb-chip-btn').forEach((chip) => {
+      chip.addEventListener('click', () => {
+        sound.playClick();
+        const text = chip.textContent.trim();
+        this._handleSubmit(text);
+      });
+    });
+  }
+
+  _clearMessages() {
+    const stream = this.element.querySelector('#chatbot-messages-stream');
+    if (!stream) return;
+    this.messages = [];
+    this.chatHistory = [];
+    stream.innerHTML = `
+      <div class="chat-message bot">
+        <div class="msg-author-tag">GROQ DISPATCHER</div>
+        <p><strong>Conversation Cleared.</strong> Telemetry state remains synchronized. Ready for incident queries.</p>
+      </div>
+    `;
+    this.updateLiveTelemetryHeader();
+  }
+
+  _addMessage(role, text, isAction = false) {
     const stream = this.element.querySelector('#chatbot-messages-stream');
     if (!stream) return;
     const div = document.createElement('div');
-    div.className = `chat-message ${role}`;
-    // Convert markdown-lite to HTML
-    const html = text
+    div.className = `chat-message ${role} ${isAction ? 'action-msg' : ''}`;
+
+    const author = role === 'user' ? 'OPERATOR' : 'GROQ DISPATCHER';
+
+    // Format markdown-lite nicely
+    let formatted = text
+      .replace(/```([\s\S]*?)```/g, '<pre class="cb-code-block"><code>$1</code></pre>')
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/`(.*?)`/g, '<code class="cb-inline-code">$1</code>')
       .replace(/\n\n/g, '</p><p>')
       .replace(/\n- /g, '<br>• ')
+      .replace(/\n([0-9]+\. )/g, '<br><strong>$1</strong>')
       .replace(/\n/g, '<br>');
-    div.innerHTML = `<p>${html}</p>`;
+
+    div.innerHTML = `
+      <div class="msg-author-tag">${author}</div>
+      <div class="msg-body"><p>${formatted}</p></div>
+    `;
+
     stream.appendChild(div);
     stream.scrollTop = stream.scrollHeight;
+
+    if (window.lucide) window.lucide.createIcons();
   }
 
   _showTyping() {
     const stream = this.element.querySelector('#chatbot-messages-stream');
     if (!stream) return;
     const div = document.createElement('div');
-    div.className = 'chat-message bot typing-indicator-msg';
+    div.className = 'chat-message bot typing-msg';
     div.id = 'typing-indicator';
-    div.innerHTML = `<span class="typing-dots"><span></span><span></span><span></span></span>`;
+    div.innerHTML = `
+      <div class="msg-author-tag">GROQ DISPATCHER</div>
+      <div class="typing-indicator-box">
+        <span class="typing-dots"><span></span><span></span><span></span></span>
+        <span class="typing-text">Querying Live Telemetry & Groq Llama-3...</span>
+      </div>
+    `;
     stream.appendChild(div);
     stream.scrollTop = stream.scrollHeight;
   }
@@ -154,364 +326,235 @@ export class SmartCityChatbot {
     if (el) el.remove();
   }
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // ACTION COMMAND EXECUTOR (Direct Simulator Actions from Chat)
+  // ─────────────────────────────────────────────────────────────────────────
+
+  _checkForActionCommands(text) {
+    const lower = text.toLowerCase();
+
+    // 1. Fail power
+    if (lower.match(/(fail|break|blackout|shut down|kill)\s+(power|grid|pwr|pwr-01)/i) || lower.includes('simulate power grid blackout')) {
+      this.graph.failService('PWR-01');
+      sound.playAlert();
+      this.updateLiveTelemetryHeader();
+      return {
+        executed: true,
+        summary: `🚨 **ACTION EXECUTED:** Injected catastrophic outage into **Power Grid (PWR-01)**. Cascading shockwaves are now propagating through Water Works (WTR-01), Telecom (TEL-01), and Traffic (TRF-01).`
+      };
+    }
+
+    // 2. Fail water
+    if (lower.match(/(fail|break|shut down)\s+(water|wtr|wtr-01|water plant)/i)) {
+      this.graph.failService('WTR-01');
+      sound.playAlert();
+      this.updateLiveTelemetryHeader();
+      return {
+        executed: true,
+        summary: `🚨 **ACTION EXECUTED:** Injected failure into **Water Purification (WTR-01)**. Hospital cooling and municipal water pressure dropping.`
+      };
+    }
+
+    // 3. Fail telecom
+    if (lower.match(/(fail|break|shut down)\s+(telecom|tel|tel-01|5g|internet)/i)) {
+      this.graph.failService('TEL-01');
+      sound.playAlert();
+      this.updateLiveTelemetryHeader();
+      return {
+        executed: true,
+        summary: `🚨 **ACTION EXECUTED:** Injected failure into **5G Telecom Hub (TEL-01)**. SCADA telemetry synchronization and emergency dispatch links degraded.`
+      };
+    }
+
+    // 4. Fail traffic
+    if (lower.match(/(fail|break|shut down)\s+(traffic|trf|trf-01|signals)/i)) {
+      this.graph.failService('TRF-01');
+      sound.playAlert();
+      this.updateLiveTelemetryHeader();
+      return {
+        executed: true,
+        summary: `🚨 **ACTION EXECUTED:** Injected failure into **Smart Traffic Grid (TRF-01)**. Traffic signals flashing yellow fail-safe mode.`
+      };
+    }
+
+    // 5. Restore all / Reset
+    if (lower.match(/(restore all|recover all|reset city|fix all|clear failures|nominal)/i) || lower.includes('restore all services')) {
+      this.graph.recoverAll();
+      sound.playSuccess?.() || sound.playClick();
+      this.updateLiveTelemetryHeader();
+      return {
+        executed: true,
+        summary: `✅ **ACTION EXECUTED:** Triggered Full Grid Recovery. All 12 municipal services restored to **100% Operational Baseline**.`
+      };
+    }
+
+    return null;
+  }
+
   async _handleSubmit(text) {
     this._addMessage('user', text);
+
+    // Check if user requested an interactive command
+    const actionResult = this._checkForActionCommands(text);
+    if (actionResult && actionResult.executed) {
+      this._addMessage('bot', actionResult.summary, true);
+    }
+
     this._showTyping();
 
     let response;
     try {
       response = await this._callGroq(text);
     } catch (err) {
-      console.warn('Groq API unavailable, using local engine:', err.message);
+      console.warn('Groq API fallback triggered:', err.message);
       response = this._localIntelligence(text);
     }
 
     this._removeTyping();
+
+    // Clean any reasoning blocks like <think>
+    response = response.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+
     this._addMessage('bot', response);
+    this.updateLiveTelemetryHeader();
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // GROQ API CALL
+  // GROQ API CALL WITH LIVE SCENARIO RAG CONTEXT
   // ─────────────────────────────────────────────────────────────────────────
 
   async _callGroq(question) {
-    if (!this.apiKey) throw new Error('No API key');
+    if (!this.apiKey) throw new Error('No Groq API key available');
 
     const services = this.graph.getAllServices();
     const resilience = this.graph.getResilienceScore();
-    const failedServices = services.filter(s => s.status === 'Failed');
+    const failedServices = services.filter((s) => s.status === 'Failed');
+    const degradedServices = services.filter((s) => s.status === 'Degraded');
 
-    // Build concise but complete city context
-    const ctx = services.map(s => {
-      const dn = this.graph.getDownstreamDependents(s.service_id)
-        .map(e => `${e.service.service_id}(${e.strength.toFixed(2)})`).join(',');
-      const up = this.graph.getUpstreamDependencies(s.service_id)
-        .map(e => `${e.service.service_id}(${e.strength.toFixed(2)})`).join(',');
-      return `[${s.service_id}] ${s.service_name} | Status:${s.status} | Criticality:${s.criticality} | Impact:${s.impact_score} | MTTR:${s.recovery_time} | Feeds→[${dn}] | FedBy→[${up}]`;
-    }).join('\n');
-
-    const systemPrompt = `You are CASCADYN AI, an expert urban infrastructure analyst for a simulated smart city.
-
-LIVE CITY STATE (Resilience: ${resilience}%):
-${ctx}
-${failedServices.length > 0 ? `\nCURRENTLY FAILED: ${failedServices.map(s => s.service_id).join(', ')}` : '\nAll services currently OPERATIONAL.'}
-
-RULES:
-1. Only answer questions about this city's infrastructure, dependencies, failures, and cascades.
-2. Reference service IDs (PWR-01, TEL-01, etc.) and actual data values from the context above.
-3. For cascade questions: trace the dependency chain using the Feeds→ data to determine what fails.
-4. Be concise (max 4 sentences or a short bulleted list). Use **bold** for service names.
-5. If asked about current status, use the live State data above.
-6. Decline off-topic questions politely.`;
-
-    const model = GROQ_MODELS[this.currentModelIdx % GROQ_MODELS.length];
-
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.apiKey}`
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: question }
-        ],
-        temperature: 0.2,
-        max_tokens: 500
+    // Build Live Topology Context
+    const topologyContext = services
+      .map((s) => {
+        const dn = this.graph
+          .getDownstreamDependents(s.service_id)
+          .map((e) => `${e.service.service_id}(w=${e.strength.toFixed(2)})`)
+          .join(', ');
+        const up = this.graph
+          .getUpstreamDependencies(s.service_id)
+          .map((e) => `${e.service.service_id}(w=${e.strength.toFixed(2)})`)
+          .join(', ');
+        return `• [${s.service_id}] ${s.service_name} | Status:${s.status} | Criticality:${s.criticality} | MTTR:${s.recovery_time} | Outgoing_Feeds→[${dn || 'None'}] | Upstream_Inputs←[${up || 'None'}]`;
       })
+      .join('\n');
+
+    const systemPrompt = `You are CASCADYN AI Incident Commander, an elite municipal disaster strategist and infrastructure engineer for a live 3D Digital Twin Smart City.
+
+LIVE MUNICIPAL SIMULATION SCENARIO:
+- Global Resilience Score: ${resilience.toFixed(1)}% / 100%
+- Active Failures (${failedServices.length}): ${failedServices.length > 0 ? failedServices.map((s) => `${s.service_name} (${s.service_id})`).join(', ') : 'None (City 100% Nominal)'}
+- Degraded Services (${degradedServices.length}): ${degradedServices.length > 0 ? degradedServices.map((s) => `${s.service_name} (${s.service_id})`).join(', ') : 'None'}
+- Critical Path Bottlenecks: PWR-01 (Power Grid) ➔ WTR-01 (Water Works) ➔ HOS-01 (St. Jude Level-1 Emergency Hospital)
+
+LIVE TOPOLOGY GRAPH & COUPLING WEIGHTS:
+${topologyContext}
+
+OPERATIONAL DIRECTIVES:
+1. Ground every answer in the LIVE telemetry data provided above.
+2. If any service is currently Failed, immediately assess downstream impact, secondary casualties, and provide numbered mitigation actions ([ACTION 1], [ACTION 2], etc.).
+3. Reference exact service IDs (PWR-01, WTR-01, TEL-01, TRF-01, HOS-01, etc.) and coupling weights.
+4. Keep answers sharp, structured, authoritative, and actionable. Use **bold** for service names and key figures.
+5. If the user asks to fail or recover services, confirm what happened and explain the ripple consequences.`;
+
+    // Multi-turn messages
+    const messagesPayload = [
+      { role: 'system', content: systemPrompt }
+    ];
+
+    // Include recent chat turns for multi-turn conversational context
+    this.chatHistory.slice(-4).forEach((m) => {
+      messagesPayload.push({ role: m.role, content: m.content });
     });
 
-    if (!res.ok) {
-      // Try next model on failure
-      this.currentModelIdx++;
-      throw new Error(`Groq API error ${res.status}: ${await res.text()}`);
+    messagesPayload.push({ role: 'user', content: question });
+
+    // Try models in cascade
+    let lastError = null;
+    for (let i = 0; i < GROQ_MODELS.length; i++) {
+      const model = GROQ_MODELS[(this.currentModelIdx + i) % GROQ_MODELS.length];
+      try {
+        const modelLabelEl = this.element.querySelector('#cb-model-name');
+        if (modelLabelEl) {
+          modelLabelEl.textContent = model.toUpperCase().replace('OPENAI/', '').replace('GROQ/', '');
+        }
+
+        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.apiKey}`
+          },
+          body: JSON.stringify({
+            model,
+            messages: messagesPayload,
+            temperature: 0.25,
+            max_tokens: 700
+          })
+        });
+
+        if (!res.ok) {
+          throw new Error(`Groq API HTTP ${res.status}: ${await res.text()}`);
+        }
+
+        const data = await res.json();
+        const output = data.choices?.[0]?.message?.content?.trim();
+        if (output) {
+          this.chatHistory.push({ role: 'user', content: question });
+          this.chatHistory.push({ role: 'assistant', content: output });
+          return output;
+        }
+      } catch (err) {
+        lastError = err;
+        continue;
+      }
     }
 
-    const data = await res.json();
-    return data.choices[0].message.content.trim();
+    throw lastError || new Error('All Groq models exhausted');
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // LOCAL INTELLIGENCE ENGINE (Full graph-aware, handles many question types)
+  // LOCAL GRAPH INTELLIGENCE (Fallback if offline)
   // ─────────────────────────────────────────────────────────────────────────
 
   _localIntelligence(question) {
     const q = question.toLowerCase().trim();
     const services = this.graph.getAllServices();
     const resilience = this.graph.getResilienceScore();
+    const failed = services.filter((s) => s.status === 'Failed');
 
-    // ── Off-topic guard ──────────────────────────────────────────────────
-    const offTopics = ['recipe', 'cook', 'javascript', 'python', 'history of', 'who is', 'president', 'capital of', 'weather'];
-    if (offTopics.some(k => q.includes(k))) {
-      return "I'm specialized for CASCADYN infrastructure analysis only. Ask me about city services, dependencies, failures, or cascade simulations.";
-    }
-
-    // ── Helper: find service from any keyword ─────────────────────────────
-    const findSvc = (keyword) => {
-      return services.find(s =>
-        s.service_name.toLowerCase().includes(keyword) ||
-        s.service_id.toLowerCase().includes(keyword) ||
-        s.category.toLowerCase().includes(keyword)
-      );
-    };
-
-    // ── Helper: simulate full cascade from a service ──────────────────────
-    const simulateCascade = (startId, severity = 1.0) => {
-      const visited = new Map();
-      const queue = [{ id: startId, depth: 0, severity, cause: 'Primary' }];
-      visited.set(startId, { depth: 0 });
-      const timeline = [];
-
-      while (queue.length > 0) {
-        const cur = queue.shift();
-        const s = this.graph.getService(cur.id);
-        timeline.push({ ...cur, name: s ? s.service_name : cur.id, criticality: s?.criticality, impact: s?.impact_score });
-
-        const edges = this.graph.adj.get(cur.id) || [];
-        edges.forEach(edge => {
-          if (!visited.has(edge.target_id)) {
-            const propSev = cur.severity * edge.strength;
-            if (propSev >= 0.45) {
-              visited.set(edge.target_id, { depth: cur.depth + 1 });
-              queue.push({ id: edge.target_id, depth: cur.depth + 1, severity: propSev, cause: `${cur.id}` });
-            }
-          }
-        });
-      }
-      return timeline;
-    };
-
-    // ══════════════════════════════════════════════════════════════════════
-    // 1. "What depends on [service]?" / "What is downstream of [service]?"
-    // ══════════════════════════════════════════════════════════════════════
-    if (q.match(/what.*(depends?|downstream|relies?|need)/)) {
-      // Which service?
-      let target = null;
-      const keywords = ['power', 'electricity', 'water', 'telecom', 'internet', 'hospital', 'traffic', 'transit', 'metro', 'emergency', 'government', 'municipal'];
-      for (const kw of keywords) {
-        if (q.includes(kw)) { target = findSvc(kw); break; }
-      }
-      if (!target) {
-        // Try to match any service name in the question
-        target = services.find(s => q.includes(s.service_name.toLowerCase().split('/')[0].toLowerCase()));
-      }
-
-      if (target) {
-        const dependents = this.graph.getDownstreamDependents(target.service_id);
-        if (dependents.length === 0) {
-          return `**${target.service_name} (${target.service_id})** has no direct downstream dependents — it is an end-node consumer.`;
-        }
-        const list = dependents.map(d =>
-          `- **${d.service.service_name} (${d.service.service_id})**: coupling strength ${(d.strength * 100).toFixed(0)}% — ${d.description}`
-        ).join('\n');
-        return `**${dependents.length} services** directly depend on **${target.service_name} (${target.service_id})**:\n\n${list}`;
-      }
-    }
-
-    // ══════════════════════════════════════════════════════════════════════
-    // 2. "What feeds / powers / supplies [service]?" — Upstream deps
-    // ══════════════════════════════════════════════════════════════════════
-    if (q.match(/(what|which).*(feed|power|supply|upstream|input|requir).*(hospital|water|telecom|traffic|transit|emergency|government)/i) ||
-        q.match(/(upstream|inputs? of|feeds?|powers?)/)) {
-      const keywords = ['hospital', 'water', 'telecom', 'traffic', 'transit', 'emergency', 'government', 'power'];
-      let target = null;
-      for (const kw of keywords) {
-        if (q.includes(kw)) { target = findSvc(kw); break; }
-      }
-      if (target) {
-        const upstream = this.graph.getUpstreamDependencies(target.service_id);
-        if (upstream.length === 0) {
-          return `**${target.service_name} (${target.service_id})** is a primary source — it has no upstream dependencies.`;
-        }
-        const list = upstream.map(u =>
-          `- **${u.service.service_name} (${u.service.service_id})** (weight: ${(u.strength * 100).toFixed(0)}%) — ${u.description}`
-        ).join('\n');
-        return `**${target.service_name} (${target.service_id})** depends on these upstream inputs:\n\n${list}`;
-      }
-    }
-
-    // ══════════════════════════════════════════════════════════════════════
-    // 3. "What happens if [service] fails?" — Full cascade trace
-    // ══════════════════════════════════════════════════════════════════════
-    if (q.match(/(what happens|what if|cascade|fail|break|down|collapse)/)) {
-      const keywords = ['power', 'electricity', 'water', 'telecom', 'internet', 'hospital', 'traffic', 'transit', 'emergency', 'government'];
-      let target = null;
-      for (const kw of keywords) {
-        if (q.includes(kw)) { target = findSvc(kw); break; }
-      }
-      if (!target) {
-        target = services.find(s => q.includes(s.service_name.toLowerCase().split('/')[0].toLowerCase()));
-      }
-
-      if (target) {
-        const timeline = simulateCascade(target.service_id, 1.0);
-        const cascade = timeline.slice(1); // exclude the source itself
-
-        if (cascade.length === 0) {
-          return `If **${target.service_name} (${target.service_id})** fails, no downstream cascade occurs. It is an end-node consumer.`;
-        }
-
-        const maxDepth = Math.max(...cascade.map(c => c.depth));
-        const criticalCount = cascade.filter(c => c.criticality === 'Critical').length;
-        const list = cascade.slice(0, 6).map(c =>
-          `- **${c.name} (${c.id})** — Depth ${c.depth}${c.criticality === 'Critical' ? ' ⚠ Critical' : ''}`
-        ).join('\n');
-        const more = cascade.length > 6 ? `\n- ...and ${cascade.length - 6} more services` : '';
-
-        return `If **${target.service_name} (${target.service_id})** fails, **${cascade.length} service${cascade.length !== 1 ? 's' : ''}** are disrupted (cascade depth: **${maxDepth}**${criticalCount > 0 ? `, ${criticalCount} critical` : ''}):\n\n${list}${more}`;
-      }
-    }
-
-    // ══════════════════════════════════════════════════════════════════════
-    // 4. "Which service is most critical?" / "Most important?"
-    // ══════════════════════════════════════════════════════════════════════
-    if (q.match(/(most critical|most important|highest impact|highest criticality|critical service)/)) {
-      const critical = services.filter(s => s.criticality === 'Critical');
-      if (critical.length === 0) {
-        return 'No services are classified as Critical in the current dataset.';
-      }
-      const sorted = critical.sort((a, b) => b.impact_score - a.impact_score);
-      const list = sorted.map(s =>
-        `- **${s.service_name} (${s.service_id})**: Impact ${s.impact_score}/100, MTTR: ${s.recovery_time}`
-      ).join('\n');
-      return `The **Critical-tier** services (highest priority) are:\n\n${list}\n\nDisrupting these triggers city-wide cascades.`;
-    }
-
-    // ══════════════════════════════════════════════════════════════════════
-    // 5. "Which service creates the largest cascade?" / "Worst failure?"
-    // ══════════════════════════════════════════════════════════════════════
-    if (q.match(/(largest cascade|biggest cascade|worst failure|most damage|most impact|most downstream)/)) {
-      let best = null, bestCount = 0;
-      services.forEach(s => {
-        const timeline = simulateCascade(s.service_id, 1.0);
-        if (timeline.length > bestCount) { bestCount = timeline.length; best = s; }
-      });
-      if (best) {
-        const cascade = simulateCascade(best.service_id, 1.0).slice(1);
-        const maxDepth = cascade.length > 0 ? Math.max(...cascade.map(c => c.depth)) : 0;
-        return `**${best.service_name} (${best.service_id})** causes the largest cascade. Failing it disrupts **${cascade.length} other services** (max depth: ${maxDepth}, ${Math.round((cascade.length + 1) / services.length * 100)}% of city infrastructure).`;
-      }
-    }
-
-    // ══════════════════════════════════════════════════════════════════════
-    // 6. "Why are hospitals affected?" / "Why is [service] affected?"
-    // ══════════════════════════════════════════════════════════════════════
-    if (q.includes('why') && q.match(/(affect|down|fail|not work)/)) {
-      const keywords = ['hospital', 'water', 'telecom', 'traffic', 'transit', 'emergency', 'government'];
-      let target = null;
-      for (const kw of keywords) {
-        if (q.includes(kw)) { target = findSvc(kw); break; }
-      }
-      if (target) {
-        const upstream = this.graph.getUpstreamDependencies(target.service_id);
-        const failedUpstream = upstream.filter(u => u.service.status === 'Failed');
-        if (failedUpstream.length > 0) {
-          const list = failedUpstream.map(u => `- **${u.service.service_name}** (${(u.strength*100).toFixed(0)}% coupling) is currently FAILED`).join('\n');
-          return `**${target.service_name}** is affected because its upstream dependencies have failed:\n\n${list}\n\nRestoring these upstream services will restore **${target.service_name}**.`;
-        } else {
-          const list = upstream.map(u => `- **${u.service.service_name}** (${(u.strength*100).toFixed(0)}% coupling) — ${u.description}`).join('\n');
-          if (list) {
-            return `**${target.service_name}** relies on these critical inputs:\n\n${list}\n\nIf any of these fail at high coupling strength, ${target.service_name} is immediately disrupted.`;
-          }
-          return `**${target.service_name}** has no upstream dependencies — it is a primary source.`;
-        }
-      }
-    }
-
-    // ══════════════════════════════════════════════════════════════════════
-    // 7. "What should be restored first?" / "Recovery priority?"
-    // ══════════════════════════════════════════════════════════════════════
-    if (q.match(/(restore|fix|recover|priority|first|should be)/)) {
-      const failed = services.filter(s => s.status === 'Failed' || s.status === 'Degraded');
+    if (q.match(/(diagnose|crisis|active|what is happening|what is wrong|failing right now)/i)) {
       if (failed.length === 0) {
-        return `All **${services.length} city services** are currently **Operational**. Resilience: **${resilience}%**. No restoration needed.`;
+        return `✅ **ALL SYSTEMS NOMINAL.** City Resilience is at **${resilience.toFixed(1)}%**. No active failures detected. You can inject a test crisis by clicking a node in the 3D city or saying *"Fail power grid"* in chat.`;
       }
-
-      // Score by: criticality × downstream count × impact score
-      const scored = failed.map(s => {
-        const dn = this.graph.getDownstreamDependents(s.service_id).length;
-        const critScore = s.criticality === 'Critical' ? 3 : s.criticality === 'High' ? 2 : 1;
-        return { s, score: critScore * 10 + dn * 5 + (s.impact_score / 10) };
-      }).sort((a, b) => b.score - a.score);
-
-      const list = scored.map((r, i) => {
-        const dn = this.graph.getDownstreamDependents(r.s.service_id).length;
-        return `${i + 1}. **${r.s.service_name} (${r.s.service_id})** — ${r.s.criticality}, ${dn} downstream, MTTR: ${r.s.recovery_time}`;
-      }).join('\n');
-
-      return `**${failed.length} service${failed.length !== 1 ? 's' : ''}** need restoration. Recommended priority order:\n\n${list}\n\nRestoring upstream critical services first resolves downstream cascades automatically.`;
+      const list = failed
+        .map((f) => {
+          const dn = this.graph.getDownstreamDependents(f.service_id);
+          return `- **${f.service_name} (${f.service_id})** is FAILED. Impacting **${dn.length} downstream services**: ${dn.map((d) => d.service.service_id).join(', ')}`;
+        })
+        .join('\n');
+      return `🚨 **ACTIVE CRISIS TELEMETRY** (Resilience: **${resilience.toFixed(1)}%**):\n\n${list}\n\n**Recommendation:** Execute prioritized automated recovery starting with upstream root sources.`;
     }
 
-    // ══════════════════════════════════════════════════════════════════════
-    // 8. "Which services have the highest dependency / most connections?"
-    // ══════════════════════════════════════════════════════════════════════
-    if (q.match(/(most connected|highest dependency|most dependencies|most links|hub)/)) {
-      const ranked = services.map(s => {
-        const m = this.graph.getDependencyMetrics(s.service_id);
-        return { s, total: m.totalLinks, out: m.downstreamCount, in: m.upstreamCount };
-      }).sort((a, b) => b.total - a.total);
-
-      const list = ranked.slice(0, 4).map(r =>
-        `- **${r.s.service_name} (${r.s.service_id})**: ${r.total} total (${r.out} outgoing, ${r.in} incoming)`
-      ).join('\n');
-      return `Most interconnected services (highest total dependency links):\n\n${list}`;
-    }
-
-    // ══════════════════════════════════════════════════════════════════════
-    // 9. "Show all failed services" / "What services are down?"
-    // ══════════════════════════════════════════════════════════════════════
-    if (q.match(/(show|list|what|which).*(fail|down|broken|offline|disrupted)/)) {
-      const failed = services.filter(s => s.status === 'Failed');
-      const degraded = services.filter(s => s.status === 'Degraded');
-      if (failed.length === 0 && degraded.length === 0) {
-        return `✅ All **${services.length} services** are currently **Operational**. City resilience: **${resilience}%**.`;
+    if (q.match(/(playbook|mitigation|emergency plan|recommend)/i)) {
+      if (failed.length === 0) {
+        return `📋 **PREVENTIVE MITIGATION PLAYBOOK** (Resilience: **100%**):\n\n1. **[MONITOR]** Primary grid substations operating within normal thermal envelope.\n2. **[PRE-EMPTIVE]** St. Jude Hospital auxiliary diesel generators at 100% capacity (48h fuel reserves).\n3. **[SCADA READY]** Automated $2\\times$ MTTR algorithm primed on standby.`;
       }
-      let resp = `**Current Disruptions** (Resilience: ${resilience}%):\n\n`;
-      if (failed.length > 0) resp += `🚨 **Failed (${failed.length}):** ${failed.map(s => `${s.service_name} (${s.service_id})`).join(', ')}\n`;
-      if (degraded.length > 0) resp += `⚠️ **Degraded (${degraded.length}):** ${degraded.map(s => `${s.service_name} (${s.service_id})`).join(', ')}`;
-      return resp;
+      return `🚨 **EMERGENCY TACTICAL PLAYBOOK (CRISIS CODE #904)**:\n\n1. **[ISOLATE]** Quarantine SCADA breakers feeding failed nodes (${failed.map((f) => f.service_id).join(', ')}).\n2. **[CUTOVER]** Divert auxiliary battery reserves to St. Jude Emergency Hospital (HOS-01).\n3. **[RESTORE]** Execute priority MTTR algorithms on primary root substations.`;
     }
 
-    // ══════════════════════════════════════════════════════════════════════
-    // 10. "What is the resilience?" / "City status?"
-    // ══════════════════════════════════════════════════════════════════════
-    if (q.match(/(resilience|city status|overall|health|score)/)) {
-      const failed = services.filter(s => s.status === 'Failed').length;
-      const operational = services.filter(s => s.status === 'Operational').length;
-      const statusText = resilience > 90 ? '🟢 Excellent' : resilience > 70 ? '🟡 Moderate' : resilience > 40 ? '🟠 Poor' : '🔴 Critical';
-      return `**City Resilience: ${resilience}%** — ${statusText}\n\n- Operational: **${operational} / ${services.length}** services\n- Failed: **${failed}** service${failed !== 1 ? 's' : ''}\n\nUse "Reset City" to restore all services or "Deploy Emergency Recovery" on individual services.`;
+    if (q.match(/(restore|recover|reset)/i)) {
+      this.graph.recoverAll();
+      return `✅ **RECOVERY EXECUTED:** All 12 municipal services have been restored to **100% Operational Baseline**.`;
     }
 
-    // ══════════════════════════════════════════════════════════════════════
-    // 11. "What is [service]?" / "Tell me about [service]"
-    // ══════════════════════════════════════════════════════════════════════
-    if (q.match(/(what is|tell me|about|describe|explain)/)) {
-      const keywords = ['power', 'electricity', 'water', 'telecom', 'internet', 'hospital', 'traffic', 'transit', 'emergency', 'government'];
-      let target = null;
-      for (const kw of keywords) {
-        if (q.includes(kw)) { target = findSvc(kw); break; }
-      }
-      if (target) {
-        const dn = this.graph.getDownstreamDependents(target.service_id).length;
-        const up = this.graph.getUpstreamDependencies(target.service_id).length;
-        return `**${target.service_name} (${target.service_id})**\n\n- **Criticality:** ${target.criticality} | **Impact Score:** ${target.impact_score}/100\n- **Status:** ${target.status} | **MTTR:** ${target.recovery_time}\n- **Connections:** ${dn} downstream dependents, ${up} upstream inputs\n- **Description:** ${target.description}\n- **Backup:** ${target.backup_system || 'Standard Grid Backup'}`;
-      }
-    }
-
-    // ══════════════════════════════════════════════════════════════════════
-    // 12. General fallback
-    // ══════════════════════════════════════════════════════════════════════
-    const failedCount = services.filter(s => s.status === 'Failed').length;
-    const tips = [
-      'What depends on Power?',
-      'What happens if Telecom fails?',
-      'Which service creates the largest cascade?',
-      'What should be restored first?',
-      'Why are hospitals affected?',
-      'Which service is most critical?',
-    ];
-    return `**City Resilience: ${resilience}%**${failedCount > 0 ? ` — ⚠ ${failedCount} service${failedCount !== 1 ? 's' : ''} currently failed` : ' — all services operational'}\n\nI can help with:\n${tips.map(t => `- "${t}"`).join('\n')}\n\nOr ask about any specific service by name.`;
+    return `**City Resilience: ${resilience.toFixed(1)}%** (${failed.length} active failures).\n\nAsk me:\n- *"Diagnose active crisis"*\n- *"What happens if Telecom fails?"*\n- *"Generate emergency playbook"*\n- *"Fail Power Grid"*`;
   }
 }
