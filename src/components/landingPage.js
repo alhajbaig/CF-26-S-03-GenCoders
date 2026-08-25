@@ -142,6 +142,10 @@ export class LandingPage {
               <i data-lucide="compass" style="width: 22px; height: 22px;"></i>
               <span>Enter 3D City Engine</span>
             </button>
+            <button id="btn-hero-budget" class="btn btn-secondary btn-hero-secondary">
+              <i data-lucide="wallet" style="width: 20px; height: 20px;"></i>
+              <span>Budget Allocator</span>
+            </button>
             <button id="btn-scroll-guide" class="btn btn-secondary btn-hero-secondary">
               <i data-lucide="play-circle" style="width: 20px; height: 20px;"></i>
               <span>Interactive User Guide</span>
@@ -2485,6 +2489,17 @@ export class LandingPage {
           if (this.lenis) this.lenis.scrollTo(section, { offset: -80 });
           else section.scrollIntoView({ behavior: 'smooth' });
         }
+      });
+    }
+
+    const budgetBtn = this.element.querySelector('#btn-hero-budget');
+    if (budgetBtn) {
+      budgetBtn.addEventListener('click', () => {
+        sound.playClick();
+        this.hide();
+        if (this.onEnterCity) this.onEnterCity();
+        const tabBtn = document.getElementById('tab-btn-budget');
+        if (tabBtn) tabBtn.click();
       });
     }
 

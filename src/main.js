@@ -14,6 +14,7 @@ import { sound } from './engine/audioEngine.js';
 import { SmartCityChatbot } from './components/chatbot.js';
 import { WhatIfSimulator } from './components/whatIfSimulator.js';
 import { FailureFlashcard } from './components/failureFlashcard.js';
+import { BudgetAllocator } from './components/budgetAllocator.js';
 
 class CascadynApp {
   constructor() {
@@ -26,6 +27,7 @@ class CascadynApp {
     this.isAudioMuted = false;
     this.chatbot = null;
     this.whatIfSimulator = null;
+    this.budgetAllocator = null;
     this.flashcard = null;
     this.activeDockTab = 'services';
     this.dockSearchQuery = '';
@@ -99,6 +101,10 @@ class CascadynApp {
         if (this.whatIfSimulator) {
           this.whatIfSimulator.selectedServices.clear();
           this.whatIfSimulator.renderForm();
+        }
+        if (this.budgetAllocator) {
+          this.budgetAllocator.recalculate();
+          this.budgetAllocator.renderDockView();
         }
       }
     );
@@ -263,6 +269,11 @@ class CascadynApp {
       </div>
 
       <div class="header-actions">
+        <button id="btn-open-budget" class="btn btn-secondary" title="Municipal Budget Allocator & Resilience Finance (Press B)">
+          <i data-lucide="wallet" style="width: 16px; height: 16px;"></i>
+          Budget Allocator
+        </button>
+
         <button id="btn-open-graph" class="btn btn-secondary" title="View 2D Dependency Graph (Press G)">
           <i data-lucide="git-fork" style="width: 16px; height: 16px;"></i>
           2D Graph
@@ -295,6 +306,11 @@ class CascadynApp {
       this.landingPage.show();
       this.cityScene.setLandingMode(true);
       this.inspector.close();
+    });
+
+    header.querySelector('#btn-open-budget').addEventListener('click', () => {
+      sound.playClick();
+      this.switchToBudgetTab();
     });
 
     header.querySelector('#btn-open-graph').addEventListener('click', () => {
@@ -332,6 +348,26 @@ class CascadynApp {
     });
   }
 
+  switchToBudgetTab() {
+    const tabServicesBtn = document.getElementById('tab-btn-services');
+    const tabWhatIfBtn = document.getElementById('tab-btn-whatif');
+    const tabBudgetBtn = document.getElementById('tab-btn-budget');
+    const contentServices = document.getElementById('tab-content-services');
+    const contentWhatIf = document.getElementById('tab-content-whatif');
+    const contentBudget = document.getElementById('tab-content-budget');
+
+    this.activeDockTab = 'budget';
+    if (tabBudgetBtn) tabBudgetBtn.classList.add('active');
+    if (tabServicesBtn) tabServicesBtn.classList.remove('active');
+    if (tabWhatIfBtn) tabWhatIfBtn.classList.remove('active');
+    if (contentBudget) contentBudget.style.display = 'block';
+    if (contentServices) contentServices.style.display = 'none';
+    if (contentWhatIf) contentWhatIf.style.display = 'none';
+    if (this.budgetAllocator) {
+      this.budgetAllocator.renderDockView();
+    }
+  }
+
   renderLeftDock(container) {
     const dock = document.createElement('div');
     dock.className = 'floating-dock-left';
@@ -342,6 +378,7 @@ class CascadynApp {
       <div class="dock-tabs-bar">
         <button class="dock-tab-btn active" id="tab-btn-services">Services</button>
         <button class="dock-tab-btn" id="tab-btn-whatif">⚗ What-If</button>
+        <button class="dock-tab-btn" id="tab-btn-budget">💰 Budget</button>
       </div>
 
       <!-- Tab Content 1: Services List -->
@@ -373,6 +410,11 @@ class CascadynApp {
       <div class="dock-card" id="tab-content-whatif" style="display: none;">
         <div id="sandbox-component-container"></div>
       </div>
+
+      <!-- Tab Content 3: Budget Allocator -->
+      <div class="dock-card" id="tab-content-budget" style="display: none;">
+        <div id="budget-component-container"></div>
+      </div>
     `;
 
     container.appendChild(dock);
@@ -380,16 +422,20 @@ class CascadynApp {
     // Tab bindings
     const tabServicesBtn = dock.querySelector('#tab-btn-services');
     const tabWhatIfBtn = dock.querySelector('#tab-btn-whatif');
+    const tabBudgetBtn = dock.querySelector('#tab-btn-budget');
     const contentServices = dock.querySelector('#tab-content-services');
     const contentWhatIf = dock.querySelector('#tab-content-whatif');
+    const contentBudget = dock.querySelector('#tab-content-budget');
 
     tabServicesBtn.addEventListener('click', () => {
       sound.playClick();
       this.activeDockTab = 'services';
       tabServicesBtn.classList.add('active');
       tabWhatIfBtn.classList.remove('active');
+      tabBudgetBtn.classList.remove('active');
       contentServices.style.display = 'block';
       contentWhatIf.style.display = 'none';
+      contentBudget.style.display = 'none';
     });
 
     tabWhatIfBtn.addEventListener('click', () => {
@@ -397,8 +443,24 @@ class CascadynApp {
       this.activeDockTab = 'whatif';
       tabWhatIfBtn.classList.add('active');
       tabServicesBtn.classList.remove('active');
+      tabBudgetBtn.classList.remove('active');
       contentWhatIf.style.display = 'block';
       contentServices.style.display = 'none';
+      contentBudget.style.display = 'none';
+    });
+
+    tabBudgetBtn.addEventListener('click', () => {
+      sound.playClick();
+      this.activeDockTab = 'budget';
+      tabBudgetBtn.classList.add('active');
+      tabServicesBtn.classList.remove('active');
+      tabWhatIfBtn.classList.remove('active');
+      contentBudget.style.display = 'block';
+      contentServices.style.display = 'none';
+      contentWhatIf.style.display = 'none';
+      if (this.budgetAllocator) {
+        this.budgetAllocator.renderDockView();
+      }
     });
 
     // Search input listener
@@ -430,6 +492,25 @@ class CascadynApp {
       },
       (serviceId) => this.handleServiceSelected(serviceId)
     );
+
+    // Initialize Budget Allocator inside its container
+    const budgetContainer = dock.querySelector('#budget-component-container');
+    this.budgetAllocator = new BudgetAllocator(
+      budgetContainer,
+      this.graph,
+      (serviceId) => this.handleServiceSelected(serviceId),
+      (budgetData) => {
+        this.updateHeaderStats();
+        if (this.whatIfSimulator) {
+          this.whatIfSimulator.applyBudgetAllocatorData(budgetData);
+        }
+      }
+    );
+
+    // Initial budget synchronization with What-If
+    if (this.whatIfSimulator && this.budgetAllocator) {
+      this.whatIfSimulator.applyBudgetAllocatorData(this.budgetAllocator.calculateAllocation());
+    }
 
     this.updateLeftDock();
   }
@@ -671,6 +752,10 @@ class CascadynApp {
             <span class="shortcut-desc">Open 2D Network Dependency Graph</span>
           </div>
           <div class="shortcut-row">
+            <div class="shortcut-keys"><kbd>B</kbd></div>
+            <span class="shortcut-desc">Open Budget Allocator & Resilience Finance</span>
+          </div>
+          <div class="shortcut-row">
             <div class="shortcut-keys"><kbd>M</kbd></div>
             <span class="shortcut-desc">Mute / Unmute Audio Sound FX</span>
           </div>
@@ -748,6 +833,8 @@ class CascadynApp {
         this.flashcard.dismiss();
         this._prevFailedIds.clear();
         this.graph.resetAll();
+      } else if (key === 'B') {
+        this.switchToBudgetTab();
       } else if (key === 'M') {
         this.isAudioMuted = sound.toggleMute();
         const icon = document.getElementById('audio-icon');

@@ -23,6 +23,7 @@ export class WhatIfSimulator {
     this.recoveryStrategy = 'automated';
     this.disasterFund = 15000000;             // $15M default municipal emergency fund
     this.budgetAllocationMode = 'optimal';     // 'optimal' | 'life_safety' | 'upstream_root' | 'austerity'
+    this.appliedBudgetData = null;
 
     // Live Financial & Sim state
     this.simTime = 0;
@@ -44,6 +45,32 @@ export class WhatIfSimulator {
     this.originalStatuses = null;
 
     this.init();
+  }
+
+  /**
+   * Synchronizes What-If simulation parameters with live Municipal Budget Allocator
+   */
+  applyBudgetAllocatorData(budgetData) {
+    if (!budgetData) return;
+    this.appliedBudgetData = budgetData;
+    this.disasterFund = budgetData.reserveAmount || 15000000;
+    
+    // Auto-align recovery strategy / budget policy with budget allocator strategy
+    if (budgetData.strategy === 'life_safety') {
+      this.budgetAllocationMode = 'life_safety';
+      this.recoveryStrategy = 'manual';
+    } else if (budgetData.strategy === 'hardening') {
+      this.budgetAllocationMode = 'upstream_root';
+      this.recoveryStrategy = 'priority';
+    } else if (budgetData.strategy === 'balanced') {
+      this.budgetAllocationMode = 'optimal';
+      this.recoveryStrategy = 'automated';
+    }
+
+    if (!this.isSimulating) {
+      this.renderForm();
+      this._updatePreview();
+    }
   }
 
   init() {
@@ -121,7 +148,7 @@ export class WhatIfSimulator {
         severity: current.severity,
         isPrimary: current.depth === 0,
         criticality: s ? s.criticality : 'Unknown',
-        recoveryTimeSec: s ? (s.recovery_time_seconds || 1800) : 1800,
+        recoveryTimeSec: s ? (s.active_recovery_seconds || s.recovery_time_seconds || 1800) : 1800,
         repairBudget: s ? (s.repair_budget_usd || 2000000) : 2000000,
         hourlyBleed: s ? (s.hourly_economic_bleed_usd || 500000) : 500000,
         emergencyOps: s ? (s.emergency_ops_hourly_usd || 30000) : 30000
@@ -130,7 +157,10 @@ export class WhatIfSimulator {
       const edges = this.graph.adj.get(current.id) || [];
       edges.forEach((edge) => {
         if (!visited.has(edge.target_id)) {
-          const propSeverity = current.severity * edge.strength;
+          const targetNode = this.graph.getService(edge.target_id);
+          // Hardening resilience factor from budget allocation reduces failure severity & propagation chance
+          const resilienceFactor = targetNode?.active_resilience_factor || 1.0;
+          const propSeverity = (current.severity * edge.strength) / resilienceFactor;
           if (propSeverity >= 0.45) {
             const delayMins = Math.max(2, Math.round((current.depth + 1) * 3 + (1 - edge.strength) * 5));
             const failureTime = current.failureTime + delayMins;
@@ -200,6 +230,24 @@ export class WhatIfSimulator {
           <p style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.4;">
             Simulate multi-service failure cascades and evaluate the <strong>exact government budget & economic capital</strong> required for emergency recovery.
           </p>
+
+          <!-- Budget Allocator Live Synchronization Banner -->
+          ${this.appliedBudgetData ? `
+            <div class="whatif-budget-sync-badge" style="margin-top: 10px; padding: 10px 12px; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 10px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                <div style="display: flex; align-items: center; gap: 6px; font-weight: 800; font-size: 0.76rem; color: #10B981;">
+                  <span>💰</span>
+                  <span>Municipal Budget Synced</span>
+                </div>
+                <span class="strategy-tag" style="font-size: 0.6rem; padding: 1px 6px; background: rgba(16, 185, 129, 0.15); color: #10B981;">${this.appliedBudgetData.strategy.toUpperCase()}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--text-secondary); margin-top: 2px;">
+                <span>Disaster Fund: <strong>${this._formatMoney(this.disasterFund)}</strong></span>
+                <span style="color: #10B981; font-weight: 700;">+${this.appliedBudgetData.kpis.resilienceBoost}% Resilience</span>
+                <span style="color: #F59E0B; font-weight: 700;">-${this.appliedBudgetData.kpis.mttrReductionPct}% MTTR</span>
+              </div>
+            </div>
+          ` : ''}
         </div>
 
         <form id="sandbox-config-form" style="display: flex; flex-direction: column; gap: 12px;">
