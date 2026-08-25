@@ -74,9 +74,16 @@ export class ServiceInspector {
         </div>
 
         <div class="stat-tile">
-          <div class="stat-tile-label">Impact Score</div>
-          <div class="stat-tile-value" style="color: ${service.impact_score > 90 ? '#EF4444' : '#0EA5E9'};">
-            ${service.impact_score} <span style="font-size: 0.8rem; font-weight: 500; color: var(--text-muted);">/ 100</span>
+          <div class="stat-tile-label">Govt Repair Budget</div>
+          <div class="stat-tile-value" style="color: #00D2FF; font-family: var(--font-mono); font-size: 1rem;">
+            $${((service.repair_budget_usd || 2000000) / 1000000).toFixed(2)}M
+          </div>
+        </div>
+
+        <div class="stat-tile">
+          <div class="stat-tile-label">Economic Bleed Rate</div>
+          <div class="stat-tile-value" style="color: #EF4444; font-family: var(--font-mono); font-size: 1rem;">
+            $${((service.hourly_economic_bleed_usd || 500000) / 1000).toFixed(0)}k <span style="font-size: 0.7rem; color: var(--text-muted);">/ hr</span>
           </div>
         </div>
 
@@ -84,13 +91,6 @@ export class ServiceInspector {
           <div class="stat-tile-label">Recovery Time (MTTR)</div>
           <div class="stat-tile-value" style="font-size: 1rem;">
             ${service.recovery_time}
-          </div>
-        </div>
-
-        <div class="stat-tile">
-          <div class="stat-tile-label">Total Dependencies</div>
-          <div class="stat-tile-value" style="font-size: 1rem;">
-            ${metrics.totalLinks} <span style="font-size: 0.75rem; font-weight: 500; color: var(--text-muted);">(${metrics.downstreamCount} out, ${metrics.upstreamCount} in)</span>
           </div>
         </div>
       </div>

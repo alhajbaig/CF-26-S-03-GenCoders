@@ -14,6 +14,9 @@ export const SYNTHETIC_CITY_DATASET = [
     recovery_time: "45 mins",
     recovery_time_seconds: 45 * 60,
     impact_score: 98,
+    repair_budget_usd: 4200000,          // $4.2M capital repair cost
+    hourly_economic_bleed_usd: 850000,    // $850k/hr municipal economic loss
+    emergency_ops_hourly_usd: 45000,      // $45k/hr utility crew deployment
     coordinates: { x: -28, y: 0, z: -25 },
     icon: "zap",
     badge_color: "#FF2E93",
@@ -42,6 +45,9 @@ export const SYNTHETIC_CITY_DATASET = [
     recovery_time: "60 mins",
     recovery_time_seconds: 60 * 60,
     impact_score: 86,
+    repair_budget_usd: 2400000,          // $2.4M pump & purification repair
+    hourly_economic_bleed_usd: 520000,    // $520k/hr municipal water loss
+    emergency_ops_hourly_usd: 35000,      // $35k/hr water truck deployment
     coordinates: { x: -35, y: 0, z: 22 },
     icon: "droplets",
     badge_color: "#00D2FF",
@@ -67,6 +73,9 @@ export const SYNTHETIC_CITY_DATASET = [
     recovery_time: "30 mins",
     recovery_time_seconds: 30 * 60,
     impact_score: 92,
+    repair_budget_usd: 1600000,          // $1.6M dark fiber & antenna repair
+    hourly_economic_bleed_usd: 920000,    // $920k/hr digital commerce disruption
+    emergency_ops_hourly_usd: 25000,      // $25k/hr mobile cell deployment
     coordinates: { x: 0, y: 0, z: -10 },
     icon: "radio",
     badge_color: "#0EA5E9",
@@ -93,6 +102,9 @@ export const SYNTHETIC_CITY_DATASET = [
     recovery_time: "20 mins",
     recovery_time_seconds: 20 * 60,
     impact_score: 74,
+    repair_budget_usd: 850000,           // $850k sensor & controller replacement
+    hourly_economic_bleed_usd: 410000,    // $410k/hr congestion productivity loss
+    emergency_ops_hourly_usd: 30000,      // $30k/hr traffic warden overtime
     coordinates: { x: 18, y: 0, z: -15 },
     icon: "traffic-cone",
     badge_color: "#F59E0B",
@@ -116,6 +128,9 @@ export const SYNTHETIC_CITY_DATASET = [
     recovery_time: "50 mins",
     recovery_time_seconds: 50 * 60,
     impact_score: 82,
+    repair_budget_usd: 3600000,          // $3.6M traction substation & rail line repair
+    hourly_economic_bleed_usd: 780000,    // $780k/hr fare loss & citizen commute stoppage
+    emergency_ops_hourly_usd: 40000,      // $40k/hr emergency shuttle buses
     coordinates: { x: 25, y: 0, z: 15 },
     icon: "train",
     badge_color: "#F97316",
@@ -139,6 +154,9 @@ export const SYNTHETIC_CITY_DATASET = [
     recovery_time: "90 mins",
     recovery_time_seconds: 90 * 60,
     impact_score: 99,
+    repair_budget_usd: 2900000,          // $2.9M emergency generator fuel & medical life support
+    hourly_economic_bleed_usd: 620000,    // $620k/hr medical surgery delays
+    emergency_ops_hourly_usd: 120000,     // $120k/hr critical care emergency staff & oxygen
     coordinates: { x: -10, y: 0, z: 28 },
     icon: "heart-pulse",
     badge_color: "#EF4444",
@@ -161,6 +179,9 @@ export const SYNTHETIC_CITY_DATASET = [
     recovery_time: "25 mins",
     recovery_time_seconds: 25 * 60,
     impact_score: 95,
+    repair_budget_usd: 1800000,          // $1.8M radio mast & dispatch CAD repair
+    hourly_economic_bleed_usd: 450000,    // $450k/hr public hazard exposure
+    emergency_ops_hourly_usd: 95000,      // $95k/hr all-call emergency first responders
     coordinates: { x: 8, y: 0, z: 30 },
     icon: "shield-alert",
     badge_color: "#E11D48",
@@ -185,6 +206,9 @@ export const SYNTHETIC_CITY_DATASET = [
     recovery_time: "40 mins",
     recovery_time_seconds: 40 * 60,
     impact_score: 79,
+    repair_budget_usd: 1500000,          // $1.5M municipal server & database restoration
+    hourly_economic_bleed_usd: 680000,    // $680k/hr civil transaction & tax halt
+    emergency_ops_hourly_usd: 20000,      // $20k/hr disaster declaration ops
     coordinates: { x: 30, y: 0, z: -28 },
     icon: "landmark",
     badge_color: "#10B981",

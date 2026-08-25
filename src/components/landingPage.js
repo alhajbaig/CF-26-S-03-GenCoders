@@ -427,14 +427,14 @@ export class LandingPage {
                     <i data-lucide="flask-conical" style="width: 26px; height: 26px;"></i>
                   </div>
                 </div>
-                <h3 class="master-title">Run Multi-Vector What-If Scenarios</h3>
+                <h3 class="master-title">Run What-If Disaster & Budget Scenarios</h3>
                 <p class="master-desc">
-                  Switch to the <strong>⚗ What-If Sandbox</strong> in the left dock. Select multiple concurrent service failure vectors, adjust severity (10% - 100%), set failure duration, and choose between <em>Manual, Automated (2× MTTR), or Priority</em> recovery algorithms.
+                  Select multiple concurrent service failure vectors, adjust disaster severity, configure <strong>Municipal Emergency Fund caps ($2M - $50M)</strong>, and benchmark recovery algorithms to measure real-time government repair spend and economic downtime savings.
                 </p>
                 <div class="master-shortcuts-row">
-                  <span class="kbd-pill"><kbd>Multi-Select</kbd> Outages</span>
-                  <span class="kbd-pill"><kbd>Severity</kbd> 10% - 100%</span>
-                  <span class="kbd-pill"><kbd>3 Algorithms</kbd> Benchmark</span>
+                  <span class="kbd-pill"><kbd>Govt Fund</kbd> $2M - $50M</span>
+                  <span class="kbd-pill"><kbd>Bleed Rate</kbd> Live $/hr</span>
+                  <span class="kbd-pill"><kbd>2× MTTR</kbd> Capital ROI</span>
                 </div>
                 <div class="master-action-row">
                   <button class="btn-step-action btn-orange btn-launch-step3">
@@ -449,22 +449,22 @@ export class LandingPage {
                 <div class="master-card-header">
                   <div class="master-num-glow magenta">04</div>
                   <div class="master-icon-box" style="color: #FF2E93; background: rgba(255, 46, 147, 0.12);">
-                    <i data-lucide="git-fork" style="width: 26px; height: 26px;"></i>
+                    <i data-lucide="network" style="width: 26px; height: 26px;"></i>
                   </div>
                 </div>
-                <h3 class="master-title">Analyze 2D Dependency Topologies (DAG)</h3>
+                <h3 class="master-title">Inspect 2D DAG & Continuous Coupling</h3>
                 <p class="master-desc">
-                  Press <code class="code-pill">G</code> or click <strong>2D Graph</strong> in the top header to view the topological dependency DAG. Examine continuous edge weights [0.0 - 1.0], bottleneck services, upstream power lines, and downstream hospitals/transit links.
+                  Open the <strong>🌐 2D Network Graph</strong> view to analyze the mathematical Directed Acyclic Graph. Hover over nodes to highlight upstream suppliers, downstream dependents, and examine continuous coupling weights \(W_{u,v} \in [0.0, 1.0]\).
                 </p>
                 <div class="master-shortcuts-row">
-                  <span class="kbd-pill"><kbd>G</kbd> Toggle 2D Graph</span>
-                  <span class="kbd-pill"><kbd>Edge Weights</kbd> Continuous</span>
-                  <span class="kbd-pill"><kbd>Bottlenecks</kbd> Highlighted</span>
+                  <span class="kbd-pill"><kbd>Hover</kbd> Highlight Path</span>
+                  <span class="kbd-pill"><kbd>Click Node</kbd> Isolate</span>
+                  <span class="kbd-pill"><kbd>Coupling</kbd> Matrix</span>
                 </div>
                 <div class="master-action-row">
                   <button class="btn-step-action btn-magenta btn-launch-step4">
                     <i data-lucide="git-branch" style="width: 16px; height: 16px;"></i>
-                    <span>Inspect 2D Graph (G)</span>
+                    <span>Open 2D Network DAG</span>
                   </button>
                 </div>
               </div>
@@ -479,12 +479,12 @@ export class LandingPage {
                 </div>
                 <h3 class="master-title">Consult Aditya Prasad (AI Commander)</h3>
                 <p class="master-desc">
-                  Chat directly with Aditya Prasad, our witty and elite AI Incident Commander powered by Groq Llama-3. Query real-time city health telemetry, generate emergency mitigation playbooks, or trigger live simulation actions.
+                  Chat directly with Aditya Prasad, our witty and elite AI Incident Commander powered by Groq Llama-3. Query real-time city health telemetry, evaluate government repair budgets, generate emergency playbooks, or trigger live actions.
                 </p>
                 <div class="master-shortcuts-row">
                   <span class="kbd-pill"><kbd>Aditya Prasad</kbd> AI</span>
-                  <span class="kbd-pill"><kbd>Groq LLM</kbd> Sub-Second</span>
-                  <span class="kbd-pill"><kbd>Live RAG</kbd> Telemetry</span>
+                  <span class="kbd-pill"><kbd>Govt Budget</kbd> RAG</span>
+                  <span class="kbd-pill"><kbd>Live Action</kbd> Enabled</span>
                 </div>
                 <div class="master-action-row">
                   <button class="btn-step-action btn-green btn-launch-step5">
@@ -602,44 +602,48 @@ export class LandingPage {
                     </div>
                   </div>
 
-                  <!-- Dynamic Screen 3: What-If Sandbox Multi-Vector Matrix -->
+                  <!-- Dynamic Screen 3: What-If Sandbox Multi-Vector & Budget Matrix -->
                   <div class="guide-screen" data-screen="3">
                     <div class="screen-whatif-hud">
                       <div class="hud-telemetry-header">
-                        <span class="sw-title">MONTE CARLO DISASTER VECTOR MATRIX</span>
-                        <span class="sw-tag orange">SIM SPEED: 2.0×</span>
+                        <span class="sw-title">WHAT-IF DISASTER & BUDGET MATRIX</span>
+                        <span class="sw-tag orange">DISASTER FUND: $15.0M</span>
                       </div>
 
                       <div class="sw-outage-toggles">
-                        <div class="sw-toggle active"><span class="sw-check">✓</span> ⚡ PWR-01 Power Grid</div>
-                        <div class="sw-toggle active"><span class="sw-check">✓</span> 💧 WTR-01 Water Works</div>
-                        <div class="sw-toggle"><span class="sw-check">☐</span> 📡 TEL-01 Telecom Hub</div>
-                        <div class="sw-toggle"><span class="sw-check">☐</span> 🚇 TRN-01 Metro Transit</div>
+                        <div class="sw-toggle active"><span class="sw-check">✓</span> ⚡ PWR-01 ($4.2M)</div>
+                        <div class="sw-toggle active"><span class="sw-check">✓</span> 💧 WTR-01 ($2.4M)</div>
+                        <div class="sw-toggle"><span class="sw-check">☐</span> 📡 TEL-01 ($1.6M)</div>
+                        <div class="sw-toggle"><span class="sw-check">☐</span> 🚇 TRN-01 ($3.6M)</div>
                       </div>
 
-                      <div class="sw-slider-mock">
-                        <div class="sw-s-label">
-                          <span>INJECTED FAILURE SEVERITY:</span>
-                          <span class="sw-val orange">75% CATASTROPHIC</span>
+                      <!-- Budget & Bleed Telemetry Row -->
+                      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:8px;background:rgba(0,0,0,0.3);border-radius:8px;margin-bottom:8px;">
+                        <div>
+                          <div style="font-size:0.62rem;color:var(--text-muted);font-family:var(--font-mono);">GOVT BUDGET NEEDED:</div>
+                          <div style="font-family:var(--font-mono);font-size:0.88rem;font-weight:900;color:#F97316;">$6.60M (Repairs)</div>
                         </div>
-                        <div class="sw-bar-track"><div class="sw-bar-fill" style="width: 75%;"></div></div>
+                        <div>
+                          <div style="font-size:0.62rem;color:var(--text-muted);font-family:var(--font-mono);">ECONOMIC BLEED:</div>
+                          <div style="font-family:var(--font-mono);font-size:0.88rem;font-weight:900;color:#EF4444;">$1.37M / hr</div>
+                        </div>
                       </div>
 
                       <div class="sw-strategy-comparison">
                         <div class="strat-row">
                           <span class="st-name">Manual Strategy (Critical First):</span>
                           <div class="st-bar-wrap"><div class="st-bar-fill manual" style="width: 85%;"></div></div>
-                          <span class="st-time">60m</span>
+                          <span class="st-time">60m · $1.37M Loss</span>
                         </div>
                         <div class="strat-row active">
                           <span class="st-name green">Automated Strategy (2× MTTR):</span>
                           <div class="st-bar-wrap"><div class="st-bar-fill auto" style="width: 40%;"></div></div>
-                          <span class="st-time green">28m (Optimal)</span>
+                          <span class="st-time green">28m · Saves $730k</span>
                         </div>
                         <div class="strat-row">
                           <span class="st-name">Priority Strategy (Root First):</span>
                           <div class="st-bar-wrap"><div class="st-bar-fill priority" style="width: 60%;"></div></div>
-                          <span class="st-time">42m</span>
+                          <span class="st-time">42m · $960k Loss</span>
                         </div>
                       </div>
                     </div>

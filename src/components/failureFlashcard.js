@@ -87,18 +87,22 @@ export class FailureFlashcard {
           </div>
           <div class="impact-divider"></div>
           <div class="impact-metric">
-            <div class="impact-metric-val" style="color: #F97316;">${primary.impact_score}</div>
-            <div class="impact-metric-label">Impact Score</div>
+            <div class="impact-metric-val" style="color: #00D2FF; font-family: var(--font-mono); font-size: 1.05rem;">
+              $${((primary.repair_budget_usd || 2000000) / 1000000).toFixed(1)}M
+            </div>
+            <div class="impact-metric-label">Govt Repair Cost</div>
+          </div>
+          <div class="impact-divider"></div>
+          <div class="impact-metric">
+            <div class="impact-metric-val" style="color: #EF4444; font-family: var(--font-mono); font-size: 1.05rem;">
+              $${((primary.hourly_economic_bleed_usd || 500000) / 1000).toFixed(0)}k/h
+            </div>
+            <div class="impact-metric-label">Economic Bleed</div>
           </div>
           <div class="impact-divider"></div>
           <div class="impact-metric">
             <div class="impact-metric-val" style="color: #F59E0B;">⏱ ${recoveryETA}</div>
             <div class="impact-metric-label">Est. Recovery</div>
-          </div>
-          <div class="impact-divider"></div>
-          <div class="impact-metric">
-            <div class="impact-metric-val" style="color: #0EA5E9;">${primary.criticality}</div>
-            <div class="impact-metric-label">Criticality</div>
           </div>
         </div>
 

@@ -497,6 +497,11 @@ export class SmartCityChatbot {
     const failedServices = services.filter((s) => s.status === 'Failed');
     const degradedServices = services.filter((s) => s.status === 'Degraded');
 
+    // Financial calculations
+    const totalRepairBudget = failedServices.reduce((sum, s) => sum + (s.repair_budget_usd || 2000000), 0);
+    const totalHourlyBleed = failedServices.reduce((sum, s) => sum + (s.hourly_economic_bleed_usd || 500000), 0);
+    const totalEmergencyOps = failedServices.reduce((sum, s) => sum + (s.emergency_ops_hourly_usd || 30000), 0);
+
     // Build Live Topology Context
     const topologyContext = services
       .map((s) => {
@@ -508,7 +513,7 @@ export class SmartCityChatbot {
           .getUpstreamDependencies(s.service_id)
           .map((e) => `${e.service.service_id}(w=${e.strength.toFixed(2)})`)
           .join(', ');
-        return `• [${s.service_id}] ${s.service_name} | Status:${s.status} | Criticality:${s.criticality} | MTTR:${s.recovery_time} | Outgoing_Feeds→[${dn || 'None'}] | Upstream_Inputs←[${up || 'None'}]`;
+        return `• [${s.service_id}] ${s.service_name} | Status:${s.status} | Criticality:${s.criticality} | Repair:$${((s.repair_budget_usd || 2000000) / 1000000).toFixed(1)}M | Bleed:$${((s.hourly_economic_bleed_usd || 500000) / 1000).toFixed(0)}k/hr | Outgoing_Feeds→[${dn || 'None'}] | Upstream_Inputs←[${up || 'None'}]`;
       })
       .join('\n');
 
@@ -518,13 +523,16 @@ YOUR PERSONALITY & TONE:
 - Name: Aditya Prasad.
 - Persona: Charming, clever, witty, humorous, and confident. You mix sharp humor with brilliant technical insight. Think Tony Stark meets an elite Indian systems engineer who loves chai and zero SCADA downtime.
 - You greet users warmly and humorously (e.g. "Namaste!", "Hey there!", "Aditya on duty!").
-- You NEVER give boring, dry, or robotic responses. You make complex city engineering fun, engaging, and delightfully easy to understand!
-- You can answer BOTH general everyday questions (tech, science, coding, life, jokes, friendly greetings) AND deep smart-city simulation queries.
+- You NEVER give boring, dry, or robotic responses. You make complex city engineering and government budgeting fun, engaging, and delightfully easy to understand!
+- You can answer BOTH general everyday questions (tech, science, coding, life, jokes, friendly greetings) AND deep smart-city simulation & government budget queries.
 
-LIVE MUNICIPAL SIMULATION SCENARIO:
+LIVE MUNICIPAL SIMULATION & BUDGET TELEMETRY:
 - Global Resilience Score: ${resilience.toFixed(1)}% / 100%
 - Active Failures (${failedServices.length}): ${failedServices.length > 0 ? failedServices.map((s) => `${s.service_name} (${s.service_id})`).join(', ') : 'None (City 100% Nominal)'}
 - Degraded Services (${degradedServices.length}): ${degradedServices.length > 0 ? degradedServices.map((s) => `${s.service_name} (${s.service_id})`).join(', ') : 'None'}
+- Govt Physical Repair Budget Required: $${(totalRepairBudget / 1000000).toFixed(2)}M
+- Municipal Economic Bleed Rate: $${(totalHourlyBleed / 1000).toFixed(0)}k / hour
+- Emergency Public Safety Ops Rate: $${(totalEmergencyOps / 1000).toFixed(0)}k / hour
 - Critical Path Bottlenecks: PWR-01 (Power Grid) ➔ WTR-01 (Water Works) ➔ HOS-01 (St. Jude Level-1 Emergency Hospital)
 
 LIVE TOPOLOGY GRAPH:
@@ -532,11 +540,16 @@ ${topologyContext}
 
 HOW YOU MUST STRUCTURE YOUR ANSWERS:
 - Always structure your answers with clean sections, bold headers, and emojis:
-  - **🎯 The Quick Take (Summary)**: 1-2 witty, crystal-clear sentences delivering the punchline or direct answer.
-  - **🔍 What's Really Going On (Key Details)**: Crisp, easy-to-read bullet points breaking down facts in plain English.
-  - **⚡ City Impact** (for simulation queries): How this affects citizens, water pressure, hospital backups, or internet speeds.
+  - **🎯 The Quick Take (Summary)**: 1-2 witty, crystal-clear sentences delivering the punchline, direct answer, or fiscal bottom-line.
+  - **🔍 What's Really Going On (Key Details)**: Crisp, easy-to-read bullet points breaking down facts, repair budgets, or technical points in plain English.
+  - **⚡ City & Budget Impact**: How this affects citizens, public safety, and government taxpayer funds.
   - **🛠️ Aditya's Battle Plan (Action Items)**: 1-3 simple numbered steps to fix or test the problem.
-  - **💡 Pro-Tip**: A clever, humorous tip for experimenting with the 3D city.`;
+  - **💡 Pro-Tip**: A clever, humorous tip for saving taxpayer money or experimenting with the 3D city.
+
+BUDGET & FISCAL QUERIES:
+- When asked about budget, money, recovery costs, or economic loss:
+  - Break down the exact numbers: Physical Hardware Repair ($), Economic Bleed Rate ($/hr), and Emergency Ops ($/hr).
+  - Emphasize how Automated 2× MTTR recovery saves millions in downtime bleeding compared to slow manual repairs!`;
 
     // Multi-turn messages
     const messagesPayload = [
@@ -680,11 +693,48 @@ ${list}
 **💡 Pro-Tip**: Say *"restore all services"* to let Aditya fix everything in one click!`;
     }
 
-    // 5. Fallback
+    // 5. Budget & Cost Queries
+    if (q.match(/(budget|cost|money|fund|dollar|financial|economic|how much to fix|spend|bleed)/i)) {
+      if (failed.length === 0) {
+        return `**🎯 The Quick Take**
+Good news for the taxpayers! The city is **100% Nominal**, so our active emergency repair budget is **$0.00** and economic bleeding is **$0/hour**.
+
+**🔍 Municipal Capital Overview:**
+- 🏛️ **Emergency Disaster Fund Available**: $15.00M (Fully Intact)
+- ⚡ **Grid Hardening Capital**: $8.40M invested across all 12 services
+- 💡 **Hourly City Production Value**: ~$4.20M/hour
+
+**💡 Pro-Tip**: Want to see how fast a blackout burns through taxpayer dollars? Type *"fail power"* and ask me about the budget again!`;
+      }
+
+      const totalRepair = failed.reduce((sum, s) => sum + (s.repair_budget_usd || 2000000), 0);
+      const totalBleed = failed.reduce((sum, s) => sum + (s.hourly_economic_bleed_usd || 500000), 0);
+      const totalOps = failed.reduce((sum, s) => sum + (s.emergency_ops_hourly_usd || 30000), 0);
+
+      const list = failed
+        .map((f) => `- **${f.service_name} (${f.service_id})**: $${((f.repair_budget_usd || 2000000) / 1000000).toFixed(2)}M hardware repair · $${((f.hourly_economic_bleed_usd || 500000) / 1000).toFixed(0)}k/hr downtime loss`)
+        .join('\n');
+
+      return `**🎯 The Quick Take**
+💸 **Municipal Fiscal Breakdown**: To fully resolve the active **${failed.length} outage(s)**, the government needs approximately **$${(totalRepair / 1000000).toFixed(2)}M** in physical repair capital, while the city is actively losing **$${(totalBleed / 1000).toFixed(0)}k every hour** it stays down!
+
+**🔍 Detailed Cost Breakdown:**
+${list}
+- 🚨 **Emergency Public Safety Ops**: ~$${(totalOps / 1000).toFixed(0)}k/hour
+
+**🛠️ Aditya's Fiscal Strategy:**
+1. **[PRIORITIZE 2× MTTR]** Cutting recovery time by 50% saves ~$${((totalBleed * 0.5) / 1000000).toFixed(2)}M in downtime losses!
+2. **[CUTOVER BACKUPS]** Keep hospitals and emergency dispatch running on diesel generators to avoid million-dollar surge casualties.
+
+**💡 Pro-Tip**: Say *"restore all services"* to instantly restore the grid and stop the economic bleeding!`;
+    }
+
+    // 6. Fallback
     return `**🎯 The Quick Take**
-Aditya Prasad at your service! Ask me anything about the live smart city simulation, tech, or general curiosity.
+Aditya Prasad at your service! Ask me anything about the live smart city simulation, government repair budgets, tech, or general curiosity.
 
 **🔍 Fun Queries to Try:**
+- *"How much budget is needed to fix this outage?"*
 - *"Aditya, tell me a joke"*
 - *"What happens if Telecom fails?"*
 - *"Diagnose the active crisis"*
