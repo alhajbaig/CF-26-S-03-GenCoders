@@ -297,24 +297,33 @@ class CascadynApp {
       this.inspector.close();
     });
 
-    header.querySelector('#btn-open-graph').addEventListener('click', () => {
+    header.querySelector('#btn-open-graph').addEventListener('click', (e) => {
+      e.stopPropagation();
       sound.playClick();
-      this.graphModal.open(this.inspector.currentServiceId);
+      this.graphModal.open(this.inspector ? this.inspector.currentServiceId : null);
     });
 
-    header.querySelector('#btn-open-datasets').addEventListener('click', () => {
+    header.querySelector('#btn-open-datasets').addEventListener('click', (e) => {
+      e.stopPropagation();
       sound.playClick();
       this.datasetModal.open();
     });
 
-    header.querySelector('#btn-reset-city').addEventListener('click', () => {
+    header.querySelector('#btn-reset-city').addEventListener('click', (e) => {
+      e.stopPropagation();
       sound.playRecovery();
       if (this.whatIfSimulator && this.whatIfSimulator.isSimulating) {
         this.whatIfSimulator.stopSimulation();
       }
-      this.flashcard.dismiss();
+      if (this.flashcard) {
+        this.flashcard.dismiss();
+      }
       this._prevFailedIds.clear();
       this.graph.resetAll();
+      this.cityScene.resetOverviewCamera();
+      this.cityScene.updateServiceVisuals();
+      this.updateHeaderStats();
+      this.updateLeftDock();
     });
 
     header.querySelector('#btn-toggle-audio').addEventListener('click', () => {
